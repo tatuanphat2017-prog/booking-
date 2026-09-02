@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>Test chọn ghế real-time — MatchdayApi</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<style>
+  body { font-family: Segoe UI, Arial, sans-serif; background: #0A0C10; color: #F4F6FA; margin: 0; padding: 24px; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .hint { color: #9aa4b2; font-size: 13px; margin-bottom: 20px; }
+  .panel { background: #12151b; border: 1px solid #23272f; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+  label { display: block; font-size: 13px; margin-bottom: 4px; color: #9aa4b2; }
+  input, textarea { width: 100%; box-sizing: border-box; background: #0A0C10; border: 1px solid #2a2f3a; color: #F4F6FA; padding: 8px; border-radius: 6px; font-family: monospace; font-size: 12px; }
+  textarea { height: 60px; resize: vertical; }
+  .row { display: flex; gap: 12px; margin-bottom: 12px; }
+  .row > div { flex: 1; }
+  button { background: #2F6FED; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 8px; }
+  button:hover { background: #5B9CFF; }
+  button.secondary { background: #2a2f3a; }
+  #status { font-size: 13px; margin-top: 8px; }
+  .seat-block { margin-bottom: 16px; }
+  .seat-block h3 { font-size: 14px; margin: 0 0 8px; color: #5B9CFF; }
+  .seat-row { display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+  .seat { width: 42px; height: 36px; border-radius: 4px; border: none; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .seat.available { background: #1c2733; color: #9aa4b2; }
+  .seat.held-by-me { background: #2F6FED; color: #fff; }
+  .seat.held-other { background: #c98a2b; color: #fff; cursor: not-allowed; }
+  .seat.booked { background: #444; color: #777; cursor: not-allowed; }
+  #log { background: #000; border-radius: 6px; padding: 10px; font-family: monospace; font-size: 12px; height: 160px; overflow-y: auto; white-space: pre-wrap; }
+  #summary { font-size: 13px; margin: 8px 0; color: #5B9CFF; }
+</style>
+</head>
+<body>
+  <h1>Test chọn ghế real-time (SignalR) — MatchdayApi</h1>
+  <p class="hint">Mở trang này ở 2 tab/trình duyệt khác nhau (đăng nhập 2 tài khoản khác nhau) để thấy ghế đồng bộ real-time.</p>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label>JWT Token (lấy từ POST /api/auth/login, KHÔNG kèm chữ "Bearer")</label>
+        <textarea id="token" placeholder="eyJhbGciOi..."></textarea>
+      </div>
+      <div style="max-width:160px">
+        <label>Match Id</label>
+        <input id="matchId" type="number" value="3" />
+      </div>
+    </div>
+    <button onclick="connectAndLoad()">Kết nối + Tải sơ đồ ghế</button>
+    <button class="secondary" onclick="checkout()">Đặt vé (Checkout)</button>
+    <div id="status">Chưa kết nối.</div>
+  </div>
+
+  <div id="summary"></div>
+  <div id="seatMap" class="panel"></div>
+
+  <div class="panel">
+    <label>Log sự kiện real-time</label>
+    <div id="log"></div>
+  </div>
+
+<script>
+let connection = null;
+let currentMatchId = null;
+let seats = []; // cache dữ liệu seat-map mới nhất
+
+function log(msg) {
+  const el = document.getElementById('log');
+  const time = new Date().toLocaleTimeString();
+  el.textContent += `[${time}] ${msg}\n`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function apiBase() {
+  return window.location.origin;
+}
+
+async function connectAndLoad() {
+  const token = document.getElementById('token').value.trim();
+  const matchId = parseInt(document.getElementById('matchId').value, 10);
+  if (!token) { alert('Nhập JWT token trước.'); return; }
+  currentMatchId = matchId;
+
+  if (connection) {
+    await connection.stop();
+  }
+
+  connection = new signalR.HubConnectionBuilder()
+    .withUrl(`${apiBase()}/hubs/seat-selection?access_token=${encodeURIComponent(token)}`)
+    .withAutomaticReconnect()
+    .build();
+
+  connection.on('SeatHeld', (seatId) => {
+    log(`SeatHeld: ghế #${seatId} vừa bị người khác giữ.`);
+    updateSeatStatus(seatId, 'held-other');
+  });
+
+  connection.on('SeatReleased', (seatId) => {
+    log(`SeatReleased: ghế #${seatId} vừa được nhả ra (trống lại).`);
+    updateSeatStatus(seatId, 'available');
+  });
+
+  connection.on('SeatBooked', (seatId) => {
+    log(`SeatBooked: ghế #${seatId} vừa được đặt vé thành công (chốt đơn).`);
+    updateSeatStatus(seatId, 'booked');
+  });
+
+  connection.on('HoldConfirmed', (seatId, expireAt) => {
+    log(`HoldConfirmed: bạn đã giữ ghế #${seatId} tới ${new Date(expireAt).toLocaleTimeString()}.`);
+    updateSeatStatus(seatId, 'held-by-me');
+  });
+
+  connection.on('HoldRejected', (seatId, reason) => {
+    log(`HoldRejected: ghế #${seatId} — ${reason}`);
+  });
+
+  try {
+    await connection.start();
+    await connection.invoke('JoinMatch', matchId);
+    document.getElementById('status').textContent = `Đã kết nối SignalR, đang xem trận #${matchId}.`;
+    log(`Đã kết nối và join phòng match-${matchId}.`);
+    await loadSeatMap(matchId, token);
+  } catch (err) {
+    document.getElementById('status').textContent = 'Lỗi kết nối: ' + err;
+    log('Lỗi kết nối SignalR: ' + err);
+  }
+}
+
+async function loadSeatMap(matchId, token) {
+  const res = await fetch(`${apiBase()}/api/Matches/${matchId}/seat-map`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!res.ok) { log('Không tải được sơ đồ ghế: ' + res.status); return; }
+  seats = await res.json();
+  renderSeatMap();
+}
+
+function renderSeatMap() {
+  const container = document.getElementById('seatMap');
+  container.innerHTML = '';
+  const blocks = {};
+  seats.forEach(s => {
+    if (!blocks[s.seatBlockName]) blocks[s.seatBlockName] = [];
+    blocks[s.seatBlockName].push(s);
+  });
+
+  Object.keys(blocks).forEach(blockName => {
+    const blockDiv = document.createElement('div');
+    blockDiv.className = 'seat-block';
+    const price = blocks[blockName][0].price;
+    blockDiv.innerHTML = `<h3>${blockName} ${price ? '— ' + price.toLocaleString('vi-VN') + 'đ' : '(chưa có giá)'}</h3>`;
+
+    let currentRow = null, rowDiv = null;
+    blocks[blockName].forEach(s => {
+      if (s.rowLabel !== currentRow) {
+        currentRow = s.rowLabel;
+        rowDiv = document.createElement('div');
+        rowDiv.className = 'seat-row';
+        blockDiv.appendChild(rowDiv);
+      }
+      const btn = document.createElement('button');
+      btn.id = `seat-${s.seatId}`;
+      btn.className = 'seat ' + cssClassFor(s);
+      btn.textContent = `${s.rowLabel}${s.seatNumber}`;
+      btn.onclick = () => onSeatClick(s);
+      rowDiv.appendChild(btn);
+    });
+    container.appendChild(blockDiv);
+  });
+
+  updateSummary();
+}
+
+function cssClassFor(s) {
+  if (s.status === 'Booked') return 'booked';
+  if (s.status === 'Held') return s.isHeldByMe ? 'held-by-me' : 'held-other';
+  return 'available';
+}
+
+function updateSeatStatus(seatId, cssClass) {
+  const btn = document.getElementById(`seat-${seatId}`);
+  if (btn) {
+    btn.className = 'seat ' + cssClass;
+  }
+  const seat = seats.find(s => s.seatId === seatId);
+  if (seat) {
+    seat.status = cssClass === 'available' ? 'Available' : cssClass === 'booked' ? 'Booked' : 'Held';
+    seat.isHeldByMe = cssClass === 'held-by-me';
+  }
+  updateSummary();
+}
+
+function updateSummary() {
+  const mine = seats.filter(s => s.status === 'Held' && s.isHeldByMe);
+  const total = mine.reduce((sum, s) => sum + (s.price || 0), 0);
+  document.getElementById('summary').textContent =
+    mine.length > 0
+      ? `Đang giữ ${mine.length} ghế: ${mine.map(s => s.rowLabel + s.seatNumber).join(', ')} — Tổng: ${total.toLocaleString('vi-VN')}đ`
+      : 'Chưa chọn ghế nào.';
+}
+
+function onSeatClick(seat) {
+  if (!connection) { alert('Kết nối trước đã.'); return; }
+  if (seat.status === 'Booked') return;
+  if (seat.status === 'Held' && !seat.isHeldByMe) return;
+
+  if (seat.status === 'Held' && seat.isHeldByMe) {
+    connection.invoke('ReleaseSeat', currentMatchId, seat.seatId);
+  } else {
+    connection.invoke('HoldSeat', currentMatchId, seat.seatId);
+  }
+}
+
+async function checkout() {
+  const token = document.getElementById('token').value.trim();
+  const mine = seats.filter(s => s.status === 'Held' && s.isHeldByMe);
+  if (mine.length === 0) { alert('Bạn chưa giữ ghế nào để đặt.'); return; }
+
+  const res = await fetch(`${apiBase()}/api/Bookings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ matchId: currentMatchId, seatIds: mine.map(s => s.seatId) })
+  });
+
+  const body = await res.json().catch(() => null);
+  if (res.ok) {
+    log('Đặt vé thành công! Mã đơn: ' + body.bookingCode + ', Tổng tiền: ' + body.totalAmount.toLocaleString('vi-VN') + 'đ');
+    alert('Đặt vé thành công! Mã đơn: ' + body.bookingCode);
+  } else {
+    log('Đặt vé thất bại: ' + (body?.message || res.status));
+    alert('Đặt vé thất bại: ' + (body?.message || res.status));
+  }
+}
+</script>
+</body>
+</html>
