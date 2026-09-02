@@ -1,0 +1,30 @@
+name: CI - Build & Test
+
+# Chạy tự động mỗi khi push hoặc tạo Pull Request vào nhánh main
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cài .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore packages
+        run: dotnet restore MatchdayApi.sln
+
+      - name: Build (Release)
+        run: dotnet build MatchdayApi.sln --configuration Release --no-restore
+
+      - name: Chạy unit test (xUnit)
+        run: dotnet test MatchdayApi.Tests/MatchdayApi.Tests.csproj --configuration Release --no-build --verbosity normal
