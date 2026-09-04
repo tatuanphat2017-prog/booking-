@@ -5,3 +5,4 @@
 appsettings.Development.json
 appsettings.Local.json
 *.suo
+  **/wwwroot/sent-emails/

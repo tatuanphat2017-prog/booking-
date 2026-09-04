@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản trị · Tổng quan — Matchday</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+    <div id="site-header"></div>
+
+    <main>
+        <div class="container">
+            <div class="page-head">
+                <div class="eyebrow">Khu vực quản trị</div>
+                <h1 style="font-size:26px;">Tổng quan doanh thu</h1>
+            </div>
+
+            <div id="admin-nav" class="admin-tabs"></div>
+
+            <div id="stat-grid" class="stat-grid">
+                <div class="skeleton" style="height:88px"></div>
+                <div class="skeleton" style="height:88px"></div>
+                <div class="skeleton" style="height:88px"></div>
+                <div class="skeleton" style="height:88px"></div>
+            </div>
+
+            <div class="section-title">Doanh thu theo ngày (14 ngày gần nhất)</div>
+            <div id="revenue-day-card" class="card admin-panel">
+                <div class="skeleton" style="height:160px"></div>
+            </div>
+
+            <div class="section-title">Doanh thu theo trận đấu</div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Trận đấu</th>
+                            <th>Ngày giờ</th>
+                            <th>Vé bán</th>
+                            <th>Doanh thu vé</th>
+                            <th>Doanh thu đồ ăn</th>
+                            <th>Tổng</th>
+                        </tr>
+                    </thead>
+                    <tbody id="revenue-match-body">
+                        <tr><td colspan="6"><div class="skeleton" style="height:20px"></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section-title">Món ăn/thức uống bán chạy</div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Món</th>
+                            <th>Số lượng đã bán</th>
+                            <th>Doanh thu</th>
+                        </tr>
+                    </thead>
+                    <tbody id="top-food-body">
+                        <tr><td colspan="3"><div class="skeleton" style="height:20px"></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+if (MDA.requireAdmin()) {
+  MDA.renderHeader('admin');
+  MDA.renderAdminNav('dashboard');
+  MDA.renderFooter();
+  loadAll();
+}
+
+function statCard(label, value, sub) {
+  return `
+    <div class="card stat-card">
+      <div class="stat-label">${label}</div>
+      <div class="stat-value">${value}</div>
+      ${sub ? `<div class="stat-sub">${sub}</div>` : ''}
+    </div>`;
+}
+
+async function loadAll() {
+  await Promise.all([loadOverview(), loadRevenueByDay(), loadRevenueByMatch(), loadTopFood()]);
+}
+
+async function loadOverview() {
+  try {
+    const o = await MDA.api('/api/AdminDashboard/overview');
+    document.getElementById('stat-grid').innerHTML = [
+      statCard('Tổng doanh thu', MDA.money(o.totalRevenue), `Vé ${MDA.money(o.seatRevenue)} · Đồ ăn ${MDA.money(o.foodRevenue)}`),
+      statCard('Tổng số đơn', o.totalBookings, `${o.paidBookings} đã thanh toán · ${o.pendingBookings} chờ`),
+      statCard('Vé đã bán', o.totalTicketsSold),
+      statCard('Yêu cầu hoàn tiền chờ duyệt', o.pendingRefundRequests, `${o.approvedRefunds} đã duyệt · ${o.rejectedRefunds} từ chối`),
+      statCard('Đã hoàn trả', MDA.money(o.totalRefundedAmount)),
+      statCard('Đơn đã hủy', o.cancelledBookings),
+    ].join('');
+  } catch (err) {
+    MDA.toast('Không tải được tổng quan: ' + err.message, 'error');
+  }
+}
+
+async function loadRevenueByDay() {
+  try {
+    const days = await MDA.api('/api/AdminDashboard/revenue-by-day?days=14');
+    const max = Math.max(1, ...days.map(d => d.revenue));
+    const card = document.getElementById('revenue-day-card');
+    if (!days.length) {
+      card.innerHTML = `<p class="text-muted text-sm">Chưa có dữ liệu doanh thu.</p>`;
+      return;
+    }
+    card.innerHTML = days.map(d => {
+      const pct = Math.round((d.revenue / max) * 100);
+      const day = new Date(d.date).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+      return `
+        <div class="stat-row">
+          <div class="labels"><span>${day} <span class="text-faint">· ${d.paymentCount} giao dịch</span></span><b>${MDA.money(d.revenue)}</b></div>
+          <div class="stat-track"><div class="fill-home" style="width:${pct}%;"></div></div>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    MDA.toast('Không tải được doanh thu theo ngày: ' + err.message, 'error');
+  }
+}
+
+async function loadRevenueByMatch() {
+  try {
+    const rows = await MDA.api('/api/AdminDashboard/revenue-by-match?take=20');
+    const body = document.getElementById('revenue-match-body');
+    body.innerHTML = rows.length ? rows.map(r => `
+      <tr>
+        <td>${r.homeTeamName} <span class="text-faint">vs</span> ${r.awayTeamName}</td>
+        <td class="mono text-sm text-muted">${MDA.formatDateTime(r.matchDateTime)}</td>
+        <td class="mono">${r.ticketsSold}</td>
+        <td class="mono">${MDA.money(r.seatRevenue)}</td>
+        <td class="mono">${MDA.money(r.foodRevenue)}</td>
+        <td class="mono text-gold">${MDA.money(r.totalRevenue)}</td>
+      </tr>`).join('') : `<tr><td colspan="6" class="text-muted text-center">Chưa có dữ liệu.</td></tr>`;
+  } catch (err) {
+    MDA.toast('Không tải được doanh thu theo trận: ' + err.message, 'error');
+  }
+}
+
+async function loadTopFood() {
+  try {
+    const rows = await MDA.api('/api/AdminDashboard/top-food-items?take=10');
+    const body = document.getElementById('top-food-body');
+    body.innerHTML = rows.length ? rows.map(r => `
+      <tr>
+        <td>${r.name}</td>
+        <td class="mono">${r.quantitySold}</td>
+        <td class="mono text-gold">${MDA.money(r.revenue)}</td>
+      </tr>`).join('') : `<tr><td colspan="3" class="text-muted text-center">Chưa có dữ liệu.</td></tr>`;
+  } catch (err) {
+    MDA.toast('Không tải được món bán chạy: ' + err.message, 'error');
+  }
+}
+    </script>
+</body>
+</html>

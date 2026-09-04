@@ -6,4 +6,5 @@ public class FoodItemDto
     public string Name { get; set; } = string.Empty;
     public decimal Price { get; set; }
     public bool IsAvailable { get; set; }
+    public string? PhotoUrl { get; set; }
 }

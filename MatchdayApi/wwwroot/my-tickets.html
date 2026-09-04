@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vé của tôi — Matchday</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+    <div id="site-header"></div>
+
+    <main>
+        <div class="container">
+            <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap; border-bottom:1px solid var(--line-soft); padding-bottom:20px;">
+                <h1 style="font-size:26px;">Vé của tôi</h1>
+                <p class="text-muted text-sm" id="tickets-count" style="margin:0;">Đang tải danh sách...</p>
+            </div>
+
+            <div id="list">
+                <div class="skeleton" style="height:160px" class="mb-16"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        if (MDA.requireLogin()) {
+            MDA.renderHeader('tickets');
+            MDA.renderFooter();
+            load();
+        }
+
+        let refundsByBooking = {};
+
+        async function load() {
+            try {
+                const [bookings, refunds] = await Promise.all([
+                    MDA.api('/api/Bookings/mine'),
+                    MDA.api('/api/Refunds/mine').catch(() => [])
+                ]);
+                refunds.forEach(r => { refundsByBooking[r.bookingId] = r; });
+
+                const list = document.getElementById('list');
+                const countEl = document.getElementById('tickets-count');
+                if (!bookings.length) {
+                    countEl.textContent = 'Chưa có đơn nào';
+                    list.innerHTML = `<div class="empty-state card" style="padding:56px 20px;"><div class="icon">${MDA.icon('ticket')}</div><p>Bạn chưa đặt vé nào. <a class="text-gold" href="index.html">Xem các trận sắp diễn ra →</a></p></div>`;
+                    return;
+                }
+                const pendingCount = bookings.filter(b => b.status === 'Pending').length;
+                countEl.textContent = pendingCount
+                    ? `${bookings.length} đơn — ${pendingCount} đơn chờ thanh toán`
+                    : `${bookings.length} đơn`;
+                list.innerHTML = bookings.map(bookingCard).join('');
+            } catch (err) {
+                document.getElementById('tickets-count').textContent = '';
+                MDA.toast('Không tải được danh sách vé: ' + err.message, 'error');
+            }
+        }
+
+        function bookingCard(b) {
+            const refund = refundsByBooking[b.id];
+            const seatLabels = b.seats.map(s => `${s.seatBlockName} ${s.rowLabel}${s.seatNumber}`).join(', ');
+
+            let actions = '';
+            if (b.status === 'Pending') {
+                actions = `
+          <button class="btn btn-gold btn-sm" onclick="payNow(${b.id})">Thanh toán ngay</button>
+          <button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})">Hủy vé</button>`;
+            } else if (b.status === 'Paid') {
+                actions = `<button class="btn btn-ghost btn-sm" onclick="toggleTickets(${b.id})">Xem vé điện tử</button>`;
+                if (!refund || refund.status === 'Rejected') {
+                    actions += `<button class="btn btn-danger btn-sm" onclick="requestRefund(${b.id})">Yêu cầu hoàn tiền</button>`;
+                }
+            }
+
+            const refundNote = refund
+                ? `<div class="mt-8 text-sm">${MDA.statusBadge(refund.status)} <span class="text-muted">yêu cầu hoàn tiền — ${refund.reason}</span></div>`
+                : '';
+
+            return `
+        <div class="ticket fade-in mb-16" style="--stub-w: 170px;">
+          <div class="ticket-info">
+            <div class="flex-between mb-16">
+              ${MDA.statusBadge(b.status)}
+              <span class="mono text-faint text-sm">${b.bookingCode}</span>
+            </div>
+            <h3 style="font-size:16px; margin-bottom:6px;">${b.homeTeamName} <span class="text-faint" style="font-weight:400;">vs</span> ${b.awayTeamName}</h3>
+            <div class="meta-row"><span>${MDA.icon('calendar')} ${MDA.formatDateTime(b.matchDateTime)}</span></div>
+            <div class="text-sm text-muted mb-8">Ghế: ${seatLabels || '—'}</div>
+            ${b.foodItems.length ? `<div class="text-sm text-muted mb-8">Đồ ăn: ${b.foodItems.map(f => `${f.name} x${f.quantity}`).join(', ')}</div>` : ''}
+            ${refundNote}
+            <div class="flex gap-8 mt-16">${actions}</div>
+            <div id="qr-panel-${b.id}"></div>
+          </div>
+          <div class="ticket-stub">
+            <span class="notch-top"></span>
+            <span class="stub-label">Tổng tiền</span>
+            <span class="stub-value" style="font-size:17px;">${MDA.money(b.totalAmount)}</span>
+            <span class="notch-bottom"></span>
+          </div>
+        </div>`;
+        }
+
+        async function payNow(bookingId) {
+            try {
+                const pay = await MDA.api(`/api/Payments/vnpay/create/${bookingId}`, { method: 'POST' });
+                window.location.href = pay.paymentUrl;
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+            }
+        }
+
+        async function cancelBooking(bookingId) {
+            if (!confirm('Hủy đơn đặt vé này? Ghế sẽ được giải phóng ngay.')) return;
+            try {
+                await MDA.api(`/api/Bookings/${bookingId}/cancel`, { method: 'POST' });
+                MDA.toast('Đã hủy đơn đặt vé.', 'success');
+                load();
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+            }
+        }
+
+        async function requestRefund(bookingId) {
+            const reason = prompt('Lý do yêu cầu hủy vé / hoàn tiền:');
+            if (!reason) return;
+            try {
+                await MDA.api(`/api/Bookings/${bookingId}/refund-request`, {
+                    method: 'POST',
+                    body: JSON.stringify({ reason })
+                });
+                MDA.toast('Đã gửi yêu cầu hoàn tiền, chờ Admin duyệt.', 'success');
+                load();
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+            }
+        }
+
+        async function toggleTickets(bookingId) {
+            const panel = document.getElementById(`qr-panel-${bookingId}`);
+            if (panel.dataset.open === '1') {
+                panel.innerHTML = '';
+                panel.dataset.open = '0';
+                return;
+            }
+            panel.innerHTML = `<div class="skeleton mt-16" style="height:100px"></div>`;
+            panel.dataset.open = '1';
+            try {
+                const tickets = await MDA.api(`/api/Tickets/booking/${bookingId}`);
+                const imgs = await Promise.all(tickets.map(async t => {
+                    const res = await fetch(`${MDA.apiBase()}/api/Tickets/${t.id}/qr`, {
+                        headers: { Authorization: `Bearer ${MDA.getToken()}` }
+                    });
+                    const blob = await res.blob();
+                    return { ...t, url: URL.createObjectURL(blob) };
+                }));
+                panel.innerHTML = `
+          <div class="flex gap-16 mt-16" style="flex-wrap:wrap;">
+            ${imgs.map(t => `
+              <div class="text-center">
+                <img src="${t.url}" width="120" height="120" style="border-radius:8px; border:1px solid var(--line);" />
+                <div class="mono text-sm mt-8">${t.ticketCode}</div>
+                <div class="text-faint text-sm">${t.rowLabel}${t.seatNumber}${t.isCheckedIn ? ' · Đã check-in' : ''}</div>
+              </div>`).join('')}
+          </div>`;
+            } catch (err) {
+                panel.innerHTML = `<p class="text-muted text-sm mt-16">${err.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

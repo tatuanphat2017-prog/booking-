@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Matchday — Đặt vé xem bóng đá trực tiếp</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <style>
+        .scoreboard {
+            position: relative;
+            background: #060704;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            padding: 14px 0;
+            box-shadow: inset 0 0 22px rgba(0,0,0,.6);
+        }
+
+            .scoreboard::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px);
+                background-size: 5px 5px;
+                pointer-events: none;
+            }
+
+            .scoreboard::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(90deg, #060704 0%, transparent 6%, transparent 94%, #060704 100%);
+                pointer-events: none;
+            }
+
+        .scoreboard-track {
+            display: flex;
+            align-items: center;
+            width: max-content;
+            gap: 56px;
+            animation: scoreboard-scroll 32s linear infinite;
+            will-change: transform;
+        }
+
+        @keyframes scoreboard-scroll {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
+        .sb-item {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--gold-bright);
+            text-shadow: 0 0 6px rgba(233,200,120,.45), 0 0 1px rgba(233,200,120,.6);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .sb-item .sb-dim {
+                color: var(--text-faint);
+                text-shadow: none;
+            }
+
+            .sb-item .sb-live-dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--pitch-bright);
+                box-shadow: 0 0 6px var(--pitch-bright);
+                animation: pulse-live 1.6s infinite;
+            }
+
+        @media (prefers-reduced-motion: reduce) {
+            .scoreboard-track {
+                animation: none;
+                overflow-x: auto;
+            }
+        }
+
+        .hero-carousel {
+            position: relative;
+        }
+
+        .hero-viewport {
+            overflow: hidden;
+            border-radius: var(--radius);
+        }
+
+        .hero-track {
+            display: flex;
+            transition: transform .5s var(--ease);
+        }
+
+        .hero-slide {
+            flex: 0 0 100%;
+            min-width: 0;
+        }
+
+            .hero-slide .ticket {
+                border-radius: var(--radius);
+            }
+
+        .hero-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(10,12,8,.55);
+            border: 1px solid var(--line-soft);
+            color: var(--text);
+            font-size: 18px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 5;
+            backdrop-filter: blur(4px);
+            transition: background .2s, border-color .2s;
+        }
+
+            .hero-arrow:hover {
+                background: rgba(10,12,8,.85);
+                border-color: var(--gold-dim);
+            }
+
+            .hero-arrow.prev {
+                left: 12px;
+            }
+
+            .hero-arrow.next {
+                right: 12px;
+            }
+
+        .hero-dots {
+            display: flex;
+            justify-content: center;
+            gap: 7px;
+            margin-top: 14px;
+        }
+
+        .hero-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--line);
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            transition: background .2s, width .2s;
+        }
+
+            .hero-dot.active {
+                background: var(--gold-bright);
+                width: 20px;
+                border-radius: 4px;
+            }
+
+        .team-strip {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding: 4px 2px 16px;
+            scroll-snap-type: x proximity;
+        }
+
+            .team-strip::-webkit-scrollbar {
+                height: 6px;
+            }
+
+            .team-strip::-webkit-scrollbar-thumb {
+                background: var(--line);
+                border-radius: 999px;
+            }
+
+        .team-avatar-card {
+            flex: 0 0 84px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            scroll-snap-align: start;
+            font-family: var(--font-body);
+        }
+
+        .team-avatar {
+            position: relative;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--bg-elevated-2);
+            border: 2px solid var(--gold-dim);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 19px;
+            color: var(--gold-bright);
+            transition: border-color .2s, transform .2s;
+        }
+
+            .team-avatar img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+        .team-avatar-card:hover .team-avatar {
+            border-color: var(--gold-bright);
+            transform: translateY(-2px);
+        }
+
+        .team-avatar-card .team-name {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 84px;
+        }
+
+        .fixtures-tabs {
+            display: flex;
+            gap: 30px;
+            border-bottom: 1px solid var(--line);
+            margin-bottom: 22px;
+        }
+
+        .fixtures-tab {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0 0 13px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+            position: relative;
+            transition: color .2s;
+        }
+
+            .fixtures-tab:hover {
+                color: var(--text-muted);
+            }
+
+            .fixtures-tab.active {
+                color: var(--gold-bright);
+            }
+
+                .fixtures-tab.active::after {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    bottom: -1px;
+                    height: 2px;
+                    background: var(--gold-bright);
+                }
+
+        .fixtures-panel {
+            display: none;
+        }
+
+            .fixtures-panel.active {
+                display: block;
+            }
+
+        main {
+            position: relative;
+        }
+
+        .stadium-glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 360px;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+            .stadium-glow svg {
+                width: 100%;
+                height: 100%;
+                display: block;
+            }
+
+        @media (max-width: 720px) {
+            .stadium-glow {
+                height: 220px;
+            }
+        }
+
+        .fixture-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+            gap: 14px;
+        }
+
+        .ticket-mini .ticket-info {
+            padding: 16px 18px;
+        }
+
+        .ticket-mini .team-crest {
+            width: 30px;
+            height: 33px;
+        }
+
+        .ticket-mini .crest-fill {
+            font-size: 10px;
+        }
+
+        .ticket-mini .matchup {
+            font-size: 14px;
+            flex-wrap: wrap;
+            white-space: normal;
+            row-gap: 2px;
+        }
+
+            .ticket-mini .matchup span:not(.vs-mark) {
+                overflow: visible;
+                text-overflow: clip;
+                white-space: normal;
+            }
+
+        .ticket-mini .meta-row {
+            font-size: 11px;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .ticket-mini .ticket-stub {
+            padding: 16px 10px;
+        }
+
+        .ticket-mini .stub-label {
+            font-size: 9px;
+        }
+
+        .ticket-mini .stub-value {
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="site-header"></div>
+
+    <main>
+        <div class="stadium-glow" aria-hidden="true">
+            <svg viewBox="0 0 1600 360" preserveAspectRatio="xMidYMin slice" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <radialGradient id="glowGold" cx="50%" cy="0%" r="80%">
+                        <stop offset="0%" stop-color="#e9c878" stop-opacity="0.32" />
+                        <stop offset="100%" stop-color="#e9c878" stop-opacity="0" />
+                    </radialGradient>
+                    <radialGradient id="glowPitch" cx="50%" cy="0%" r="80%">
+                        <stop offset="0%" stop-color="#6fae7a" stop-opacity="0.22" />
+                        <stop offset="100%" stop-color="#6fae7a" stop-opacity="0" />
+                    </radialGradient>
+                </defs>
+                <rect x="-80" y="0" width="680" height="380" fill="url(#glowGold)" />
+                <rect x="1000" y="0" width="680" height="380" fill="url(#glowPitch)" />
+
+                <g stroke="#3c3f2e" stroke-width="3">
+                    <line x1="150" y1="14" x2="150" y2="180" />
+                    <line x1="60" y1="70" x2="150" y2="30" />
+                    <line x1="240" y1="70" x2="150" y2="30" />
+                </g>
+                <g fill="#171a10" stroke="#4a4e38" stroke-width="1">
+                    <rect x="98" y="0" width="104" height="16" rx="2" />
+                </g>
+                <g fill="#e9c878" opacity="0.55">
+                    <circle cx="112" cy="8" r="2.4" />
+                    <circle cx="130" cy="8" r="2.4" />
+                    <circle cx="150" cy="8" r="2.4" />
+                    <circle cx="170" cy="8" r="2.4" />
+                    <circle cx="188" cy="8" r="2.4" />
+                </g>
+
+                <g stroke="#3c3f2e" stroke-width="3">
+                    <line x1="1450" y1="14" x2="1450" y2="180" />
+                    <line x1="1360" y1="70" x2="1450" y2="30" />
+                    <line x1="1540" y1="70" x2="1450" y2="30" />
+                </g>
+                <g fill="#171a10" stroke="#4a4e38" stroke-width="1">
+                    <rect x="1398" y="0" width="104" height="16" rx="2" />
+                </g>
+                <g fill="#e9c878" opacity="0.55">
+                    <circle cx="1412" cy="8" r="2.4" />
+                    <circle cx="1430" cy="8" r="2.4" />
+                    <circle cx="1450" cy="8" r="2.4" />
+                    <circle cx="1470" cy="8" r="2.4" />
+                    <circle cx="1488" cy="8" r="2.4" />
+                </g>
+            </svg>
+        </div>
+
+        <div class="container">
+
+            <section class="scoreboard mb-16" aria-label="Bảng thông tin trận đấu">
+                <div class="scoreboard-track" id="scoreboard-track"></div>
+            </section>
+
+            <section id="hero-wrap" class="hero-carousel mb-16"></section>
+
+            <div class="section-title">Đội bóng nổi bật</div>
+            <div id="team-strip" class="team-strip">
+                <div class="skeleton" style="width:72px;height:72px;border-radius:50%;flex:0 0 72px;"></div>
+                <div class="skeleton" style="width:72px;height:72px;border-radius:50%;flex:0 0 72px;"></div>
+                <div class="skeleton" style="width:72px;height:72px;border-radius:50%;flex:0 0 72px;"></div>
+                <div class="skeleton" style="width:72px;height:72px;border-radius:50%;flex:0 0 72px;"></div>
+                <div class="skeleton" style="width:72px;height:72px;border-radius:50%;flex:0 0 72px;"></div>
+            </div>
+
+            <div class="fixtures-tabs" role="tablist">
+                <button class="fixtures-tab active" data-panel="panel-upcoming" role="tab" aria-selected="true">Lịch thi đấu</button>
+                <button class="fixtures-tab" data-panel="panel-finished" role="tab" aria-selected="false">Kết quả</button>
+            </div>
+
+            <div id="panel-upcoming" class="fixtures-panel active">
+                <div class="field" style="max-width:340px;">
+                    <label for="team-search" class="sr-only">Tìm theo tên đội bóng</label>
+                    <div class="search-input">
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.4" /><path d="M13.4 13.4 10.5 10.5" stroke-linecap="round" /></svg>
+                        <input type="text" id="team-search" placeholder="Tìm theo tên đội bóng..." autocomplete="off" />
+                    </div>
+                </div>
+                <div id="upcoming-list" class="fixture-grid">
+                    <div class="skeleton" style="height:150px"></div>
+                    <div class="skeleton" style="height:150px"></div>
+                    <div class="skeleton" style="height:150px"></div>
+                </div>
+            </div>
+
+            <div id="panel-finished" class="fixtures-panel">
+                <div id="finished-list" class="fixture-grid">
+                    <div class="skeleton" style="height:150px"></div>
+                    <div class="skeleton" style="height:150px"></div>
+                    <div class="skeleton" style="height:150px"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        MDA.renderHeader('home');
+        MDA.renderFooter();
+
+        document.querySelectorAll('.fixtures-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.fixtures-tab').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+                document.querySelectorAll('.fixtures-panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+                document.getElementById(tab.dataset.panel).classList.add('active');
+            });
+        });
+
+        function crest(name) {
+            const t = MDA.crestTheme(name);
+            return `<div class="team-crest"><div class="crest-fill" style="background:${t.bg}; color:${t.fg};">${MDA.initials(name)}</div></div>`;
+        }
+
+        function fixtureCard(m, i) {
+            return `
+      <a class="ticket ticket-mini fade-in" href="match.html?id=${m.id}" style="--stub-w: 96px; animation-delay:${Math.min(i, 10) * 40}ms;">
+        <div class="ticket-info">
+          ${MDA.statusBadge(m.status)}
+          <div class="match-teams mt-8">
+            ${crest(m.homeTeamName)}
+            <div class="matchup">
+              <span>${m.homeTeamName}</span>
+              <span class="vs-mark">vs</span>
+              <span class="away-name">${m.awayTeamName}</span>
+            </div>
+          </div>
+          <div class="meta-row">
+            <span>${MDA.icon('pin')} ${m.stadiumName}</span>
+            <span>${MDA.icon('calendar')} ${MDA.formatDateTime(m.matchDateTime)}</span>
+          </div>
+        </div>
+        <div class="ticket-stub">
+          <span class="notch-top"></span>
+          <div class="stub-main">
+            <span class="stub-label">${m.minTicketPrice == null ? 'Vé' : 'Từ'}</span>
+            <span class="stub-value">${m.minTicketPrice == null ? 'Chưa mở' : MDA.money(m.minTicketPrice)}</span>
+          </div>
+          <span class="notch-bottom"></span>
+        </div>
+      </a>`;
+        }
+
+        function resultCard(m, i) {
+            const hasScore = m.homeScore != null;
+            return `
+      <a class="ticket ticket-mini fade-in" href="match.html?id=${m.id}" style="--stub-w: 96px; animation-delay:${Math.min(i, 10) * 40}ms;">
+        <div class="ticket-info">
+          ${MDA.statusBadge('Finished')}
+          <div class="match-teams mt-8">
+            ${crest(m.homeTeamName)}
+            <div class="matchup">
+              <span>${m.homeTeamName}</span>
+              <span class="vs-mark">vs</span>
+              <span class="away-name">${m.awayTeamName}</span>
+            </div>
+          </div>
+          <div class="meta-row">
+            <span>${MDA.icon('pin')} ${m.stadiumName}</span>
+            <span>${MDA.icon('calendar')} ${MDA.formatDateTime(m.matchDateTime)}</span>
+          </div>
+        </div>
+        <div class="ticket-stub">
+          <span class="notch-top"></span>
+          <div class="stub-main">
+            <span class="stub-label">KT</span>
+            <span class="stub-value">${hasScore ? `${m.homeScore}–${m.awayScore}` : '—'}</span>
+          </div>
+          <span class="notch-bottom"></span>
+        </div>
+      </a>`;
+        }
+
+        function heroStub(m, result) {
+            if (m.status === 'Live' && result) {
+                const total = (result.possessionHome || 0) + (result.possessionAway || 0) || 1;
+                const pctHome = (result.possessionHome / total) * 100;
+                return `
+          <span class="notch-top"></span>
+          <span class="stub-label"><span class="dot-live"></span> Tỷ số trực tiếp</span>
+          <span class="stub-value" style="font-size:30px;">${result.homeScore}<span class="text-faint" style="font-size:16px;">–</span>${result.awayScore}</span>
+          <div style="width:100%; margin-top:10px;">
+            <div class="labels" style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-faint); margin-bottom:4px;">
+              <b class="mono" style="color:var(--text);">${result.possessionHome}%</b>
+              <span>Kiểm soát bóng</span>
+              <b class="mono" style="color:var(--text);">${result.possessionAway}%</b>
+            </div>
+            <div class="stat-track"><div class="fill-home" style="width:${pctHome}%"></div><div class="fill-away" style="width:${100 - pctHome}%"></div></div>
+          </div>
+          <span class="notch-bottom"></span>`;
+            }
+            return `
+        <span class="notch-top"></span>
+        <span class="stub-label">Giá từ</span>
+        <span class="stub-value" style="font-size:17px;">${m.minTicketPrice != null ? MDA.money(m.minTicketPrice) : '—'}</span>
+        <span class="notch-bottom"></span>`;
+        }
+
+        function heroSlideHtml(m, result, idx) {
+            const stubWidth = (m.status === 'Live' && result) ? 230 : 200;
+            const showCountdown = m.status === 'Upcoming';
+            return `
+      <div class="hero-slide" data-index="${idx}">
+        <a class="ticket fade-in" href="match.html?id=${m.id}" style="--stub-w: ${stubWidth}px;">
+          <div class="ticket-info" style="padding:32px 34px;">
+            <div class="eyebrow">Trận nổi bật</div>
+            <h1 style="font-size:28px; margin-bottom:16px;">${m.homeTeamName} <span class="text-faint" style="font-weight:400;">vs</span> ${m.awayTeamName}</h1>
+            <div class="meta-row" style="margin-bottom:20px;">
+              <span>${MDA.icon('pin')} ${m.stadiumName}, ${m.stadiumCity}</span>
+              <span>${MDA.icon('calendar')} ${MDA.formatDateTime(m.matchDateTime)}</span>
+              ${MDA.statusBadge(m.status)}
+            </div>
+            ${showCountdown ? `
+            <div class="mb-16" style="display:inline-flex; align-items:center; gap:10px; padding:8px 16px; border:1px solid var(--gold-dim); border-radius:999px; background:var(--gold-wash);">
+              <span class="text-sm text-muted">Bóng lăn sau</span>
+              <span class="mono hero-countdown" data-target="${m.matchDateTime}" style="font-size:15px; font-weight:600; color:var(--gold-bright);">--:--:--</span>
+            </div>
+            <br/>` : ''}
+            <span class="btn btn-gold">Xem chi tiết &amp; đặt vé</span>
+          </div>
+          <div class="ticket-stub">
+            ${heroStub(m, result)}
+          </div>
+        </a>
+      </div>`;
+        }
+
+        let heroIndex = 0;
+        let heroAutoTimer = null;
+        let heroSlideCount = 0;
+
+        function renderHeroCarousel(slidesData) {
+            const wrap = document.getElementById('hero-wrap');
+            if (!slidesData.length) { wrap.innerHTML = ''; return; }
+
+            const slidesHtml = slidesData.map((s, i) => heroSlideHtml(s.match, s.result, i)).join('');
+            const dotsHtml = slidesData.map((_, i) => `<button class="hero-dot${i === 0 ? ' active' : ''}" data-goto="${i}" aria-label="Trận thứ ${i + 1}"></button>`).join('');
+
+            wrap.innerHTML = `
+        <div class="hero-viewport">
+          <div class="hero-track" id="hero-track">${slidesHtml}</div>
+        </div>
+        ${slidesData.length > 1 ? `
+        <button class="hero-arrow prev" id="hero-prev" aria-label="Trận trước">‹</button>
+        <button class="hero-arrow next" id="hero-next" aria-label="Trận sau">›</button>
+        <div class="hero-dots">${dotsHtml}</div>` : ''}
+      `;
+
+            if (slidesData.length > 1) initHeroCarousel(slidesData.length);
+        }
+
+        function initHeroCarousel(count) {
+            heroSlideCount = count;
+            heroIndex = 0;
+            const track = document.getElementById('hero-track');
+            const wrap = document.getElementById('hero-wrap');
+
+            function goTo(i, userAction) {
+                heroIndex = (i + heroSlideCount) % heroSlideCount;
+                track.style.transform = `translateX(-${heroIndex * 100}%)`;
+                document.querySelectorAll('.hero-dot').forEach((d, idx) => d.classList.toggle('active', idx === heroIndex));
+                if (userAction) restartAutoplay();
+            }
+
+            document.getElementById('hero-prev').addEventListener('click', () => goTo(heroIndex - 1, true));
+            document.getElementById('hero-next').addEventListener('click', () => goTo(heroIndex + 1, true));
+            document.querySelectorAll('.hero-dot').forEach(d => d.addEventListener('click', () => goTo(Number(d.dataset.goto), true)));
+
+            function restartAutoplay() {
+                if (heroAutoTimer) clearInterval(heroAutoTimer);
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                heroAutoTimer = setInterval(() => goTo(heroIndex + 1, false), 6000);
+            }
+
+            wrap.addEventListener('mouseenter', () => { if (heroAutoTimer) clearInterval(heroAutoTimer); });
+            wrap.addEventListener('mouseleave', restartAutoplay);
+            restartAutoplay();
+        }
+
+        setInterval(() => {
+            document.querySelectorAll('.hero-countdown').forEach(el => {
+                const target = el.dataset.target;
+                if (!target) return;
+                const diff = new Date(target).getTime() - Date.now();
+                if (diff <= 0) { el.textContent = 'Sắp bắt đầu'; return; }
+                const days = Math.floor(diff / 86400000);
+                const hours = Math.floor((diff % 86400000) / 3600000);
+                const minutes = Math.floor((diff % 3600000) / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+                const pad = n => String(n).padStart(2, '0');
+                el.textContent = days > 0
+                    ? `${days} ngày ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+                    : `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+            });
+        }, 1000);
+
+        async function loadFeaturedTeams() {
+            const mount = document.getElementById('team-strip');
+            try {
+                const teams = await MDA.api('/api/Teams');
+                const list = teams.slice(0, 14);
+                if (!list.length) { mount.innerHTML = ''; return; }
+                mount.innerHTML = list.map(t => `
+          <button class="team-avatar-card" onclick="filterByTeam(${JSON.stringify(t.name).replace(/"/g, '&quot;')})">
+            <div class="team-avatar">
+              <span>${MDA.initials(t.name)}</span>
+              ${t.logoUrl ? `<img src="${t.logoUrl}" alt="" onerror="this.style.display='none'">` : ''}
+            </div>
+            <span class="team-name">${t.shortName || t.name}</span>
+          </button>
+        `).join('');
+            } catch (err) {
+                mount.innerHTML = '';
+            }
+        }
+
+        function filterByTeam(name) {
+            const input = document.getElementById('team-search');
+            if (!input) return;
+            input.value = name;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            document.getElementById('panel-upcoming').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function buildScoreboardItems(hero, heroResult) {
+            const items = [];
+
+            if (hero && hero.status === 'Live' && heroResult) {
+                items.push(`<span class="sb-live-dot"></span> TRỰC TIẾP <span class="sb-dim">·</span> ${hero.homeTeamName} ${heroResult.homeScore}–${heroResult.awayScore} ${hero.awayTeamName}`);
+            } else if (hero && hero.status === 'Upcoming') {
+                items.push(`TRẬN KẾ TIẾP <span class="sb-dim">·</span> ${hero.homeTeamName} vs ${hero.awayTeamName} <span class="sb-dim">·</span> ${MDA.formatDateTime(hero.matchDateTime)}`);
+            }
+
+            items.push('SƠ ĐỒ GHẾ CẬP NHẬT TRỰC TIẾP — CHỖ VỪA CÓ NGƯỜI GIỮ SẼ BÁO NGAY');
+            items.push('VÉ GỬI QUA MÃ QR — QUÉT LÀ VÀO, KHỎI CẦN IN');
+            items.push('CỔNG SOÁT VÉ MỞ TRƯỚC GIỜ BÓNG LĂN 90 PHÚT');
+
+            return items;
+        }
+
+        function renderScoreboard(items) {
+            const track = document.getElementById('scoreboard-track');
+            const doubled = items.concat(items);
+            track.innerHTML = doubled.map(text => `<span class="sb-item">${text}</span>`).join('<span class="sb-item sb-dim">•</span>');
+        }
+
+        function emptyState(text) {
+            return `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">⚽</div><p>${text}</p></div>`;
+        }
+
+        function normalize(str) {
+            return (str || '')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/gi, 'd')
+                .toLowerCase().trim();
+        }
+
+        let restUpcoming = [];
+        let allFinished = [];
+
+        function renderUpcomingList(list) {
+            document.getElementById('upcoming-list').innerHTML = list.length
+                ? list.map(fixtureCard).join('')
+                : emptyState('Không tìm thấy trận nào khớp với từ khóa.');
+        }
+
+        document.addEventListener('input', (e) => {
+            if (e.target.id !== 'team-search') return;
+            const kw = normalize(e.target.value);
+            if (!kw) { renderUpcomingList(restUpcoming); return; }
+            const filtered = restUpcoming.filter(m =>
+                normalize(m.homeTeamName).includes(kw) || normalize(m.awayTeamName).includes(kw)
+            );
+            renderUpcomingList(filtered);
+        });
+
+        async function load() {
+            let heroForTicker = null;
+            let heroResultForTicker = null;
+
+            try {
+                const upcoming = await MDA.api('/api/Dashboard/upcoming?take=12');
+
+                const HERO_COUNT = Math.min(3, upcoming.length);
+                const heroMatches = upcoming.slice(0, HERO_COUNT);
+                heroForTicker = heroMatches[0] || null;
+
+                const heroSlidesData = [];
+                for (const m of heroMatches) {
+                    let result = null;
+                    if (m.status === 'Live') {
+                        try {
+                            const detail = await MDA.api(`/api/Dashboard/matches/${m.id}`);
+                            result = detail.result || null;
+                        } catch (e) { /* không lấy được tỷ số thì rơi về hiển thị giá vé mặc định */ }
+                    }
+                    if (heroForTicker && m.id === heroForTicker.id) heroResultForTicker = result;
+                    heroSlidesData.push({ match: m, result });
+                }
+                renderHeroCarousel(heroSlidesData);
+
+                restUpcoming = upcoming.slice(HERO_COUNT);
+                if (restUpcoming.length) {
+                    renderUpcomingList(restUpcoming);
+                } else if (!upcoming.length) {
+                    document.getElementById('upcoming-list').innerHTML = emptyState('Hiện chưa có trận đấu nào sắp diễn ra. Quay lại sau nhé.');
+                } else {
+                    document.getElementById('upcoming-list').innerHTML = emptyState('Các trận sắp diễn ra đã hiển thị đủ ở khu vực nổi bật phía trên.');
+                }
+            } catch (err) {
+                MDA.toast('Không tải được danh sách trận đấu: ' + err.message, 'error');
+            }
+
+            renderScoreboard(buildScoreboardItems(heroForTicker, heroResultForTicker));
+            loadFeaturedTeams();
+
+            try {
+                allFinished = await MDA.api('/api/Dashboard/finished?take=6');
+                document.getElementById('finished-list').innerHTML = allFinished.length
+                    ? allFinished.map(resultCard).join('')
+                    : emptyState('Chưa có trận nào kết thúc.');
+            } catch (err) {
+                MDA.toast('Không tải được kết quả trận đấu: ' + err.message, 'error');
+            }
+        }
+
+        load();
+    </script>
+</body>
+</html>

@@ -207,17 +207,30 @@ public class PaymentsController : ControllerBase
 
     private static string BuildResultHtml(string title, string message, bool success)
     {
-        var color = success ? "#2ECC71" : "#E74C3C";
+        var accent = success ? "#6fae7a" : "#e17b6c";
+        var icon = success ? "✓" : "✕";
         var sb = new System.Text.StringBuilder();
         sb.Append("<!DOCTYPE html><html lang=\"vi\"><head><meta charset=\"UTF-8\" />");
+        sb.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
         sb.Append("<title>").Append(title).Append("</title>");
+        sb.Append("<link rel=\"stylesheet\" href=\"/assets/css/style.css\" />");
         sb.Append("<style>");
-        sb.Append("body{font-family:Segoe UI,Arial,sans-serif;background:#0A0C10;color:#F4F6FA;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}");
-        sb.Append(".card{background:#12151b;border:1px solid #23272f;border-radius:12px;padding:32px 40px;text-align:center;max-width:440px;}");
-        sb.Append("h1{color:").Append(color).Append(";font-size:22px;margin-bottom:12px;}");
-        sb.Append("p{color:#9aa4b2;font-size:14px;}");
+        sb.Append("body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}");
+        sb.Append(".result-card{max-width:420px;width:100%;padding:40px 36px;text-align:center;}");
+        sb.Append(".result-icon{width:56px;height:56px;border-radius:50%;background:").Append(accent)
+          .Append("22;color:").Append(accent)
+          .Append(";display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 20px;border:1px solid ").Append(accent).Append("55;}");
+        sb.Append("h1{font-size:20px;margin-bottom:10px;}");
+        sb.Append("p{color:var(--text-muted);font-size:14px;line-height:1.6;}");
+        sb.Append(".actions{margin-top:26px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}");
         sb.Append("</style></head>");
-        sb.Append("<body><div class=\"card\"><h1>").Append(title).Append("</h1><p>").Append(message).Append("</p></div></body></html>");
+        sb.Append("<body><div class=\"card result-card fade-in\">");
+        sb.Append("<div class=\"result-icon\">").Append(icon).Append("</div>");
+        sb.Append("<h1>").Append(title).Append("</h1><p>").Append(message).Append("</p>");
+        sb.Append("<div class=\"actions\">");
+        sb.Append("<a class=\"btn btn-gold\" href=\"/my-tickets.html\">Xem vé của tôi</a>");
+        sb.Append("<a class=\"btn btn-ghost\" href=\"/index.html\">Về trang chủ</a>");
+        sb.Append("</div></div></body></html>");
         return sb.ToString();
     }
 }

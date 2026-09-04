@@ -43,7 +43,8 @@ public class FoodItemsController : ControllerBase
                 Id = f.Id,
                 Name = f.Name,
                 Price = f.Price,
-                IsAvailable = f.IsAvailable
+                IsAvailable = f.IsAvailable,
+                PhotoUrl = f.PhotoUrl
             })
             .ToListAsync();
 
@@ -61,7 +62,8 @@ public class FoodItemsController : ControllerBase
             Id = item.Id,
             Name = item.Name,
             Price = item.Price,
-            IsAvailable = item.IsAvailable
+            IsAvailable = item.IsAvailable,
+            PhotoUrl = item.PhotoUrl
         });
     }
 
@@ -73,7 +75,8 @@ public class FoodItemsController : ControllerBase
         {
             Name = dto.Name,
             Price = dto.Price,
-            IsAvailable = dto.IsAvailable
+            IsAvailable = dto.IsAvailable,
+            PhotoUrl = dto.PhotoUrl
         };
 
         _db.FoodItems.Add(item);
@@ -84,7 +87,8 @@ public class FoodItemsController : ControllerBase
             Id = item.Id,
             Name = item.Name,
             Price = item.Price,
-            IsAvailable = item.IsAvailable
+            IsAvailable = item.IsAvailable,
+            PhotoUrl = item.PhotoUrl
         });
     }
 
@@ -98,6 +102,7 @@ public class FoodItemsController : ControllerBase
         item.Name = dto.Name;
         item.Price = dto.Price;
         item.IsAvailable = dto.IsAvailable;
+        item.PhotoUrl = dto.PhotoUrl;
 
         await _db.SaveChangesAsync();
         return NoContent();

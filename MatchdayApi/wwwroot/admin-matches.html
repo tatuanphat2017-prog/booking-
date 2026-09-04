@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản trị · Trận đấu — Matchday</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+    <div id="site-header"></div>
+
+    <main>
+        <div class="container">
+            <div class="page-head">
+                <div class="eyebrow">Khu vực quản trị</div>
+                <h1 style="font-size:26px;">Trận đấu</h1>
+            </div>
+
+            <div id="admin-nav" class="admin-tabs"></div>
+
+            <div class="card admin-panel">
+                <div class="admin-panel-head">
+                    <h2 id="match-form-title">Thêm trận đấu mới</h2>
+                    <button type="button" class="btn btn-ghost btn-sm" id="btn-cancel-edit" style="display:none;" onclick="resetMatchForm()">Hủy sửa</button>
+                </div>
+                <form id="match-form">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label>Đội nhà</label>
+                            <select id="m-home" required></select>
+                        </div>
+                        <div class="field">
+                            <label>Đội khách</label>
+                            <select id="m-away" required></select>
+                        </div>
+                        <div class="field">
+                            <label>Sân vận động</label>
+                            <select id="m-stadium" required></select>
+                        </div>
+                        <div class="field">
+                            <label>Ngày giờ thi đấu</label>
+                            <input type="datetime-local" id="m-datetime" required />
+                        </div>
+                        <div class="field">
+                            <label>Trạng thái</label>
+                            <select id="m-status">
+                                <option value="Upcoming">Sắp diễn ra</option>
+                                <option value="Live">Đang diễn ra</option>
+                                <option value="Finished">Đã kết thúc</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-gold" id="match-submit-btn">Tạo trận đấu</button>
+                </form>
+            </div>
+
+            <div class="section-title">Danh sách trận đấu</div>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Trận đấu</th>
+                            <th>Ngày giờ</th>
+                            <th>Sân</th>
+                            <th>Trạng thái</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="match-list-body">
+                        <tr><td colspan="5"><div class="skeleton" style="height:20px"></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="match-detail" style="display:none;">
+                <div class="section-title" id="match-detail-title">Quản lý trận đấu</div>
+                <div class="admin-tabs">
+                    <button type="button" class="admin-tab active" id="dtab-prices" onclick="switchDetailTab('prices')">Giá vé</button>
+                    <button type="button" class="admin-tab" id="dtab-lineup" onclick="switchDetailTab('lineup')">Đội hình</button>
+                    <button type="button" class="admin-tab" id="dtab-result" onclick="switchDetailTab('result')">Kết quả</button>
+                    <button type="button" class="admin-tab" id="dtab-stats" onclick="switchDetailTab('stats')">Chỉ số cầu thủ</button>
+                </div>
+                <div id="tab-prices" class="card admin-panel"></div>
+                <div id="tab-lineup" class="card admin-panel" style="display:none;"></div>
+                <div id="tab-result" class="card admin-panel" style="display:none;"></div>
+                <div id="tab-stats" class="card admin-panel" style="display:none;"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        if (MDA.requireAdmin()) {
+            MDA.renderHeader('admin');
+            MDA.renderAdminNav('matches');
+            MDA.renderFooter();
+            loadTeamsAndStadiums();
+            loadMatches();
+        }
+
+        let teamsCache = [];
+        let stadiumsCache = [];
+        let matchesCache = [];
+        let editingMatchId = null;
+
+        let currentMatch = null;
+        let currentMatchPlayers = {};
+        let currentLineup = null;
+        let loadedTabs = {};
+        let lineupSide = 'home';
+        let lineupState = {};      // playerId -> { isStarting, positionX, positionY } — trạng thái đang chỉnh, chưa lưu
+        let armedPlayerId = null;  // cầu thủ đang "cầm" để đặt vị trí khi click lên sân
+
+        /* Thư viện sơ đồ chiến thuật gợi ý — mỗi ô (slot) có nhóm vị trí (cat) +
+           tọa độ X/Y sẵn. Khi admin chọn 1 sơ đồ, applyFormationPreset() tự gán
+           cầu thủ vào từng ô theo đúng vị trí sở trường (GK/DEF/DM/MID/AM/FWD). */
+        const FORMATION_PRESETS = {
+            '4-3-3': {
+                label: '4-3-3', slots: [
+                    { cat: 'GK', x: 8, y: 50 },
+                    { cat: 'DEF', x: 26, y: 12 }, { cat: 'DEF', x: 26, y: 38 }, { cat: 'DEF', x: 26, y: 62 }, { cat: 'DEF', x: 26, y: 88 },
+                    { cat: 'MID', x: 52, y: 25 }, { cat: 'MID', x: 52, y: 50 }, { cat: 'MID', x: 52, y: 75 },
+                    { cat: 'FWD', x: 82, y: 15 }, { cat: 'FWD', x: 82, y: 50 }, { cat: 'FWD', x: 82, y: 85 },
+                ]
+            },
+            '4-4-2': {
+                label: '4-4-2', slots: [
+                    { cat: 'GK', x: 8, y: 50 },
+                    { cat: 'DEF', x: 26, y: 12 }, { cat: 'DEF', x: 26, y: 38 }, { cat: 'DEF', x: 26, y: 62 }, { cat: 'DEF', x: 26, y: 88 },
+                    { cat: 'MID', x: 52, y: 12 }, { cat: 'MID', x: 52, y: 38 }, { cat: 'MID', x: 52, y: 62 }, { cat: 'MID', x: 52, y: 88 },
+                    { cat: 'FWD', x: 82, y: 35 }, { cat: 'FWD', x: 82, y: 65 },
+                ]
+            },
+            '4-2-3-1': {
+                label: '4-2-3-1', slots: [
+                    { cat: 'GK', x: 8, y: 50 },
+                    { cat: 'DEF', x: 26, y: 12 }, { cat: 'DEF', x: 26, y: 38 }, { cat: 'DEF', x: 26, y: 62 }, { cat: 'DEF', x: 26, y: 88 },
+                    { cat: 'DM', x: 44, y: 35 }, { cat: 'DM', x: 44, y: 65 },
+                    { cat: 'AM', x: 66, y: 15 }, { cat: 'AM', x: 66, y: 50 }, { cat: 'AM', x: 66, y: 85 },
+                    { cat: 'FWD', x: 88, y: 50 },
+                ]
+            },
+            '3-5-2': {
+                label: '3-5-2', slots: [
+                    { cat: 'GK', x: 8, y: 50 },
+                    { cat: 'DEF', x: 24, y: 20 }, { cat: 'DEF', x: 24, y: 50 }, { cat: 'DEF', x: 24, y: 80 },
+                    { cat: 'MID', x: 52, y: 8 }, { cat: 'MID', x: 52, y: 30 }, { cat: 'MID', x: 52, y: 50 }, { cat: 'MID', x: 52, y: 70 }, { cat: 'MID', x: 52, y: 92 },
+                    { cat: 'FWD', x: 85, y: 35 }, { cat: 'FWD', x: 85, y: 65 },
+                ]
+            },
+            '4-1-4-1': {
+                label: '4-1-4-1', slots: [
+                    { cat: 'GK', x: 8, y: 50 },
+                    { cat: 'DEF', x: 26, y: 12 }, { cat: 'DEF', x: 26, y: 38 }, { cat: 'DEF', x: 26, y: 62 }, { cat: 'DEF', x: 26, y: 88 },
+                    { cat: 'DM', x: 42, y: 50 },
+                    { cat: 'MID', x: 62, y: 12 }, { cat: 'MID', x: 62, y: 38 }, { cat: 'MID', x: 62, y: 62 }, { cat: 'MID', x: 62, y: 88 },
+                    { cat: 'FWD', x: 88, y: 50 },
+                ]
+            },
+            '5-3-2': {
+                label: '5-3-2', slots: [
+                    { cat: 'GK', x: 8, y: 50 },
+                    { cat: 'DEF', x: 22, y: 8 }, { cat: 'DEF', x: 22, y: 28 }, { cat: 'DEF', x: 22, y: 50 }, { cat: 'DEF', x: 22, y: 72 }, { cat: 'DEF', x: 22, y: 92 },
+                    { cat: 'MID', x: 52, y: 25 }, { cat: 'MID', x: 52, y: 50 }, { cat: 'MID', x: 52, y: 75 },
+                    { cat: 'FWD', x: 85, y: 35 }, { cat: 'FWD', x: 85, y: 65 },
+                ]
+            },
+        };
+
+        function positionCategory(pos) {
+            const p = (pos || '').toUpperCase();
+            if (p === 'GK') return 'GK';
+            if (['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(p)) return 'DEF';
+            if (['CDM', 'DM'].includes(p)) return 'DM';
+            if (['CAM', 'AM'].includes(p)) return 'AM';
+            if (['CM', 'LM', 'RM'].includes(p)) return 'MID';
+            if (['LW', 'RW', 'ST', 'CF'].includes(p)) return 'FWD';
+            return 'MID';
+        }
+
+        // Nếu 1 ô không tìm được đúng cầu thủ cùng nhóm vị trí thì lấy tạm ở nhóm gần nhất.
+        const CATEGORY_FALLBACK = {
+            GK: ['GK'],
+            DEF: ['DEF', 'DM'],
+            DM: ['DM', 'MID', 'DEF'],
+            MID: ['MID', 'DM', 'AM'],
+            AM: ['AM', 'MID', 'FWD'],
+            FWD: ['FWD', 'AM'],
+        };
+
+        function applyFormationPreset(key) {
+            const preset = FORMATION_PRESETS[key];
+            if (!preset) return;
+            const players = lineupSide === 'home' ? currentMatchPlayers.home : currentMatchPlayers.away;
+            const slots = preset.slots.slice(0, Math.min(preset.slots.length, players.length));
+
+            Object.keys(lineupState).forEach(id => { lineupState[id].isStarting = false; });
+
+            let pool = players.map(p => p.id);
+            slots.forEach(slot => {
+                const priorities = CATEGORY_FALLBACK[slot.cat] || [slot.cat];
+                let chosenId = null;
+                for (const cat of priorities) {
+                    chosenId = pool.find(id => {
+                        const player = players.find(p => p.id === id);
+                        return player && positionCategory(player.position) === cat;
+                    });
+                    if (chosenId) break;
+                }
+                if (!chosenId && pool.length) chosenId = pool[0];
+                if (chosenId) {
+                    lineupState[chosenId] = { isStarting: true, positionX: slot.x, positionY: slot.y };
+                    pool = pool.filter(id => id !== chosenId);
+                }
+            });
+
+            document.getElementById('lineup-formation').value = preset.label;
+            armedPlayerId = null;
+            renderPlayerLists();
+            renderPitchMarkers();
+            updateLineupCount();
+        }
+
+        /* ---------- Danh sách đội bóng / sân vận động cho các ô select ---------- */
+
+        async function loadTeamsAndStadiums() {
+            try {
+                [teamsCache, stadiumsCache] = await Promise.all([
+                    MDA.api('/api/Teams'),
+                    MDA.api('/api/Stadiums')
+                ]);
+                const teamOptions = teamsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+                document.getElementById('m-home').innerHTML = teamOptions;
+                document.getElementById('m-away').innerHTML = teamOptions;
+                document.getElementById('m-stadium').innerHTML = stadiumsCache.map(s => `<option value="${s.id}">${s.name} (${s.city})</option>`).join('');
+            } catch (err) {
+                MDA.toast('Không tải được danh sách đội bóng/sân vận động: ' + err.message, 'error');
+            }
+        }
+
+        /* ---------- Danh sách trận đấu ---------- */
+
+        async function loadMatches() {
+            const body = document.getElementById('match-list-body');
+            body.innerHTML = `<tr><td colspan="5"><div class="skeleton" style="height:20px"></div></td></tr>`;
+            try {
+                matchesCache = await MDA.api('/api/Matches');
+                body.innerHTML = matchesCache.length
+                    ? matchesCache.map(matchRowHtml).join('')
+                    : `<tr><td colspan="5" class="text-muted text-center">Chưa có trận đấu nào.</td></tr>`;
+            } catch (err) {
+                body.innerHTML = `<tr><td colspan="5" class="text-muted text-center">${err.message}</td></tr>`;
+            }
+        }
+
+        function matchRowHtml(m) {
+            return `
+        <tr>
+          <td>${m.homeTeamName} <span class="text-faint">vs</span> ${m.awayTeamName}</td>
+          <td class="mono text-sm text-muted">${MDA.formatDateTime(m.matchDateTime)}</td>
+          <td class="text-sm">${m.stadiumName}</td>
+          <td>${MDA.statusBadge(m.status)}</td>
+          <td>
+            <div class="row-actions">
+              <button class="btn btn-sm btn-ghost" onclick="openMatchDetail(${m.id})">Quản lý</button>
+              <button class="btn btn-sm btn-ghost" onclick="editMatch(${m.id})">Sửa</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteMatch(${m.id})">Xóa</button>
+            </div>
+          </td>
+        </tr>`;
+        }
+
+        /* ---------- Form tạo / sửa trận đấu ---------- */
+
+        document.getElementById('match-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const homeTeamId = Number(document.getElementById('m-home').value);
+            const awayTeamId = Number(document.getElementById('m-away').value);
+            if (!homeTeamId || !awayTeamId) { MDA.toast('Chọn đủ đội nhà và đội khách.', 'error'); return; }
+            if (homeTeamId === awayTeamId) { MDA.toast('Đội nhà và đội khách phải khác nhau.', 'error'); return; }
+            const dt = document.getElementById('m-datetime').value;
+            if (!dt) { MDA.toast('Chọn ngày giờ thi đấu.', 'error'); return; }
+
+            const body = {
+                matchDateTime: dt + ':00',
+                status: document.getElementById('m-status').value,
+                homeTeamId, awayTeamId,
+                stadiumId: Number(document.getElementById('m-stadium').value)
+            };
+
+            const btn = document.getElementById('match-submit-btn');
+            btn.disabled = true;
+            try {
+                if (editingMatchId) {
+                    await MDA.api(`/api/Matches/${editingMatchId}`, { method: 'PUT', body: JSON.stringify(body) });
+                    MDA.toast('Đã cập nhật trận đấu.', 'success');
+                } else {
+                    await MDA.api('/api/Matches', { method: 'POST', body: JSON.stringify(body) });
+                    MDA.toast('Đã tạo trận đấu mới.', 'success');
+                }
+                resetMatchForm();
+                loadMatches();
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        function resetMatchForm() {
+            editingMatchId = null;
+            document.getElementById('match-form').reset();
+            document.getElementById('match-form-title').textContent = 'Thêm trận đấu mới';
+            document.getElementById('match-submit-btn').textContent = 'Tạo trận đấu';
+            document.getElementById('btn-cancel-edit').style.display = 'none';
+        }
+
+        function editMatch(id) {
+            const m = matchesCache.find(x => x.id === id);
+            if (!m) return;
+            editingMatchId = id;
+            document.getElementById('m-home').value = m.homeTeamId;
+            document.getElementById('m-away').value = m.awayTeamId;
+            document.getElementById('m-stadium').value = m.stadiumId;
+            document.getElementById('m-datetime').value = m.matchDateTime.slice(0, 16);
+            document.getElementById('m-status').value = m.status;
+            document.getElementById('match-form-title').textContent = `Sửa trận đấu: ${m.homeTeamName} vs ${m.awayTeamName}`;
+            document.getElementById('match-submit-btn').textContent = 'Cập nhật trận đấu';
+            document.getElementById('btn-cancel-edit').style.display = '';
+            document.getElementById('match-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        async function deleteMatch(id) {
+            if (!confirm('Xóa trận đấu này? Toàn bộ giá vé/đội hình/kết quả gắn với trận sẽ mất theo. Không thể hoàn tác.')) return;
+            try {
+                await MDA.api(`/api/Matches/${id}`, { method: 'DELETE' });
+                MDA.toast('Đã xóa trận đấu.', 'success');
+                if (currentMatch && currentMatch.id === id) {
+                    document.getElementById('match-detail').style.display = 'none';
+                    currentMatch = null;
+                }
+                loadMatches();
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+            }
+        }
+
+        /* ---------- Khu vực chi tiết: chọn 1 trận để quản lý giá vé/đội hình/kết quả/chỉ số ---------- */
+
+        function openMatchDetail(id) {
+            currentMatch = matchesCache.find(m => m.id === id);
+            if (!currentMatch) return;
+            currentMatchPlayers = {};
+            currentLineup = null;
+            loadedTabs = {};
+            lineupSide = 'home';
+            document.getElementById('match-detail').style.display = 'block';
+            document.getElementById('match-detail-title').textContent = `Quản lý: ${currentMatch.homeTeamName} vs ${currentMatch.awayTeamName}`;
+            switchDetailTab('prices');
+            document.getElementById('match-detail').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function switchDetailTab(tab) {
+            ['prices', 'lineup', 'result', 'stats'].forEach(t => {
+                document.getElementById(`dtab-${t}`).classList.toggle('active', t === tab);
+                document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none';
+            });
+            if (tab === 'prices' && !loadedTabs.prices) { loadedTabs.prices = true; loadPricesTab(); }
+            if (tab === 'lineup' && !loadedTabs.lineup) { loadedTabs.lineup = true; loadLineupTab(); }
+            if (tab === 'result' && !loadedTabs.result) { loadedTabs.result = true; loadResultTab(); }
+            if (tab === 'stats' && !loadedTabs.stats) { loadedTabs.stats = true; loadStatsTab(); }
+        }
+
+        /* ----- Tab Giá vé: mỗi khối ghế của sân thi đấu, đặt/sửa giá riêng cho trận này ----- */
+
+        async function loadPricesTab() {
+            const container = document.getElementById('tab-prices');
+            container.innerHTML = `<div class="skeleton" style="height:120px"></div>`;
+            try {
+                const [blocks, prices] = await Promise.all([
+                    MDA.api(`/api/SeatBlocks?stadiumId=${currentMatch.stadiumId}`),
+                    MDA.api(`/api/Matches/${currentMatch.id}/ticket-prices`)
+                ]);
+                const priceMap = {};
+                prices.forEach(p => { priceMap[p.seatBlockId] = p.price; });
+                container.innerHTML = `
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Khối ghế</th><th>Giá cơ bản</th><th>Giá vé trận này</th><th></th></tr></thead>
+              <tbody>
+                ${blocks.map(b => `
+                  <tr>
+                    <td>${b.name}</td>
+                    <td class="mono text-muted">${MDA.money(b.basePrice)}</td>
+                    <td><input type="number" min="0" step="1000" id="price-input-${b.id}" value="${priceMap[b.id] ?? ''}" placeholder="Chưa đặt giá" class="stat-input" style="width:150px;" /></td>
+                    <td><button type="button" class="btn btn-sm btn-gold" onclick="saveTicketPrice(${b.id})">Lưu</button></td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+            } catch (err) {
+                container.innerHTML = `<p class="text-muted text-sm">Không tải được: ${err.message}</p>`;
+            }
+        }
+
+        async function saveTicketPrice(seatBlockId) {
+            const input = document.getElementById(`price-input-${seatBlockId}`);
+            const price = Number(input.value);
+            if (!price || price < 0) { MDA.toast('Nhập giá vé hợp lệ.', 'error'); return; }
+            try {
+                await MDA.api(`/api/Matches/${currentMatch.id}/ticket-prices`, {
+                    method: 'POST',
+                    body: JSON.stringify({ seatBlockId, price })
+                });
+                MDA.toast('Đã lưu giá vé.', 'success');
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+            }
+        }
+
+        /* ----- Tab Đội hình: chọn đội hình ra sân từng đội (đá chính + tọa độ trên sân) ----- */
+
+        async function loadLineupTab() {
+            const container = document.getElementById('tab-lineup');
+            container.innerHTML = `<div class="skeleton" style="height:160px"></div>`;
+            try {
+                const [homePlayers, awayPlayers, lineup] = await Promise.all([
+                    MDA.api(`/api/Players?teamId=${currentMatch.homeTeamId}`),
+                    MDA.api(`/api/Players?teamId=${currentMatch.awayTeamId}`),
+                    MDA.api(`/api/Matches/${currentMatch.id}/lineup`).catch(() => null)
+                ]);
+                currentMatchPlayers = { home: homePlayers, away: awayPlayers };
+                currentLineup = lineup;
+                renderLineupSide();
+            } catch (err) {
+                container.innerHTML = `<p class="text-muted text-sm">Không tải được: ${err.message}</p>`;
+            }
+        }
+
+        function switchLineupSide(side) {
+            lineupSide = side;
+            renderLineupSide();
+        }
+
+        /* Vẽ sân nhỏ bên trái + danh sách cầu thủ bên phải (kể cả dự bị). Cách dùng:
+           tick "Đá chính" (tối đa 11 hoặc hết quân số nếu đội chưa đủ 11 người) rồi
+           bấm "Đặt vị trí" trên 1 cầu thủ, sau đó click lên sân để đặt — tọa độ X/Y
+           mà API cần được tính ngược lại từ điểm click, không phải gõ số tay nữa. */
+        function renderLineupSide() {
+            const container = document.getElementById('tab-lineup');
+            const players = lineupSide === 'home' ? currentMatchPlayers.home : currentMatchPlayers.away;
+            const teamLineup = currentLineup ? (lineupSide === 'home' ? currentLineup.home : currentLineup.away) : null;
+            const existingMap = {};
+            (teamLineup && teamLineup.players ? teamLineup.players : []).forEach(p => { existingMap[p.playerId] = p; });
+            const formation = (teamLineup && teamLineup.formation) || '4-3-3';
+            const sideLabel = lineupSide === 'home' ? currentMatch.homeTeamName : currentMatch.awayTeamName;
+
+            lineupState = {};
+            players.forEach(p => {
+                const ex = existingMap[p.id];
+                lineupState[p.id] = {
+                    isStarting: !!(ex && ex.isStarting),
+                    positionX: ex ? ex.positionX : 50,
+                    positionY: ex ? ex.positionY : 50
+                };
+            });
+            armedPlayerId = null;
+
+            const cap = Math.min(11, players.length);
+            const presetOptions = Object.keys(FORMATION_PRESETS).map(k => `<option value="${k}">${FORMATION_PRESETS[k].label}</option>`).join('');
+
+            container.innerHTML = `
+        <div class="flex gap-8 mb-16">
+          <button type="button" class="btn btn-sm ${lineupSide === 'home' ? 'btn-gold' : 'btn-ghost'}" onclick="switchLineupSide('home')">${currentMatch.homeTeamName}</button>
+          <button type="button" class="btn btn-sm ${lineupSide === 'away' ? 'btn-gold' : 'btn-ghost'}" onclick="switchLineupSide('away')">${currentMatch.awayTeamName}</button>
+        </div>
+        ${players.length < 11 ? `<p class="text-sm mb-16" style="color:var(--danger-bright);">Đội này chỉ có ${players.length} cầu thủ trong hệ thống — vào "Dữ liệu nền" thêm cầu thủ để đủ đội hình 11 người.</p>` : ''}
+        <div class="form-grid mb-8">
+          <div class="field">
+            <label>Sơ đồ gợi ý (tự xếp vị trí theo sở trường)</label>
+            <select id="lineup-preset-select" onchange="if(this.value){applyFormationPreset(this.value);} this.value='';">
+              <option value="">— Chọn để tự xếp cả đội —</option>
+              ${presetOptions}
+            </select>
+          </div>
+          <div class="field">
+            <label>Tên sơ đồ (lưu cùng đội hình, gõ tự do)</label>
+            <input type="text" id="lineup-formation" value="${formation}" placeholder="VD: 4-3-3" />
+          </div>
+        </div>
+        <p class="text-sm text-muted mb-16">Chọn sơ đồ gợi ý để tự xếp cả đội đúng vị trí sở trường, hoặc tick "Đá chính" + bấm "Đặt vị trí" rồi click lên sân để tự chỉnh từng người.</p>
+        <div class="flex gap-16" style="flex-wrap:wrap; align-items:flex-start;">
+          <div style="width:220px; flex-shrink:0;">
+            <div class="pitch pitch-editable" id="lineup-pitch"></div>
+            <p class="text-center text-sm mt-8"><span id="lineup-count">0</span> / ${cap} đá chính</p>
+          </div>
+          <div style="flex:1; min-width:320px;" id="lineup-player-lists"></div>
+        </div>
+        <button type="button" class="btn btn-gold mt-16" onclick="saveLineup()">Lưu đội hình ${sideLabel}</button>`;
+
+            document.getElementById('lineup-pitch').addEventListener('click', onPitchClick);
+            renderPlayerLists();
+            renderPitchMarkers();
+            updateLineupCount();
+        }
+
+        /* Tách rõ 2 danh sách: Đội hình ra sân (đang tick "Đá chính") và Danh sách
+           dự bị — thay vì 1 bảng phẳng chung, để nhìn phát biết ai đá chính ai dự bị. */
+        function renderPlayerLists() {
+            const mount = document.getElementById('lineup-player-lists');
+            if (!mount) return;
+            const players = lineupSide === 'home' ? currentMatchPlayers.home : currentMatchPlayers.away;
+            const starters = players.filter(p => lineupState[p.id].isStarting);
+            const bench = players.filter(p => !lineupState[p.id].isStarting);
+
+            const tableHtml = (list, emptyText) => `
+        <div class="table-wrap mb-16">
+          <table class="data-table">
+            <thead><tr><th>Số</th><th>Cầu thủ</th><th>Vị trí</th><th>Đá chính</th><th></th></tr></thead>
+            <tbody>${list.length ? list.map(p => lineupRowHtml(p)).join('') : `<tr><td colspan="5" class="text-muted text-center">${emptyText}</td></tr>`}</tbody>
+          </table>
+        </div>`;
+
+            mount.innerHTML = `
+        <div class="seat-block-title">Đội hình ra sân (${starters.length})</div>
+        ${tableHtml(starters, 'Chưa chọn cầu thủ đá chính nào.')}
+        <div class="seat-block-title">Danh sách dự bị (${bench.length})</div>
+        ${tableHtml(bench, 'Không còn cầu thủ dự bị.')}`;
+        }
+
+        function lineupRowHtml(p) {
+            return `
+        <tr id="lineup-row-${p.id}">
+          <td class="mono">${p.jerseyNumber}</td>
+          <td>${p.fullName}</td>
+          <td><span class="text-faint text-sm">${p.position}</span></td>
+          <td><input type="checkbox" id="lp-start-${p.id}" ${lineupState[p.id].isStarting ? 'checked' : ''} onchange="onStartingToggle(${p.id})" /></td>
+          <td><button type="button" class="btn btn-sm btn-ghost" id="lp-arm-${p.id}" onclick="armPlayer(${p.id})" ${lineupState[p.id].isStarting ? '' : 'disabled'}>Đặt vị trí</button></td>
+        </tr>`;
+        }
+
+        function onStartingToggle(playerId) {
+            const checkbox = document.getElementById(`lp-start-${playerId}`);
+            const players = lineupSide === 'home' ? currentMatchPlayers.home : currentMatchPlayers.away;
+            const cap = Math.min(11, players.length);
+            const startingCount = Object.values(lineupState).filter(s => s.isStarting).length;
+            if (checkbox.checked && startingCount >= cap) {
+                checkbox.checked = false;
+                MDA.toast(`Đã đủ ${cap} cầu thủ đá chính, bỏ chọn 1 người trước khi chọn người khác.`, 'error');
+                return;
+            }
+            lineupState[playerId].isStarting = checkbox.checked;
+            if (!checkbox.checked && armedPlayerId === playerId) armedPlayerId = null;
+            renderPlayerLists();
+            renderPitchMarkers();
+            updateLineupCount();
+        }
+
+        function armPlayer(playerId) {
+            armedPlayerId = playerId;
+            document.querySelectorAll('#lineup-player-lists tr').forEach(tr => { tr.style.background = ''; });
+            const row = document.getElementById(`lineup-row-${playerId}`);
+            if (row) row.style.background = 'var(--gold-wash)';
+            MDA.toast('Đã chọn cầu thủ — bấm vào vị trí trên sân để đặt.', 'default');
+        }
+
+        function onPitchClick(e) {
+            if (!armedPlayerId) { MDA.toast('Chọn 1 cầu thủ trong danh sách trước (bấm nút "Đặt vị trí").', 'error'); return; }
+            const pitch = document.getElementById('lineup-pitch');
+            const rect = pitch.getBoundingClientRect();
+            const relLeft = Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100));
+            const relTop = Math.min(100, Math.max(0, ((e.clientY - rect.top) / rect.height) * 100));
+            // Công thức đảo ngược đúng với cách match.html vẽ marker: left = positionY%, top = (100 - positionX)%
+            lineupState[armedPlayerId].positionY = Math.round(relLeft);
+            lineupState[armedPlayerId].positionX = Math.round(100 - relTop);
+            renderPitchMarkers();
+        }
+
+        function renderPitchMarkers() {
+            const pitch = document.getElementById('lineup-pitch');
+            if (!pitch) return;
+            const players = lineupSide === 'home' ? currentMatchPlayers.home : currentMatchPlayers.away;
+            const dots = Object.entries(lineupState)
+                .filter(([, s]) => s.isStarting)
+                .map(([playerId, s]) => {
+                    const p = players.find(x => x.id === Number(playerId));
+                    if (!p) return '';
+                    const active = Number(playerId) === armedPlayerId;
+                    return `
+            <div class="pitch-player" style="left:${s.positionY}%; top:${100 - s.positionX}%; ${active ? 'filter:drop-shadow(0 0 6px var(--gold-bright));' : ''}">
+              <div class="num">${p.jerseyNumber}</div>
+              <div class="pname">${p.fullName.split(' ').slice(-1)[0]}</div>
+            </div>`;
+                }).join('');
+            pitch.innerHTML = dots;
+        }
+
+        function updateLineupCount() {
+            const el = document.getElementById('lineup-count');
+            if (el) el.textContent = Object.values(lineupState).filter(s => s.isStarting).length;
+        }
+
+        async function saveLineup() {
+            const players = lineupSide === 'home' ? currentMatchPlayers.home : currentMatchPlayers.away;
+            const teamId = lineupSide === 'home' ? currentMatch.homeTeamId : currentMatch.awayTeamId;
+            const formation = document.getElementById('lineup-formation').value.trim();
+            if (!formation) { MDA.toast('Nhập sơ đồ chiến thuật.', 'error'); return; }
+            const body = {
+                formation,
+                players: players.map(p => ({
+                    playerId: p.id,
+                    isStarting: lineupState[p.id].isStarting,
+                    positionX: lineupState[p.id].positionX,
+                    positionY: lineupState[p.id].positionY
+                }))
+            };
+            try {
+                await MDA.api(`/api/Matches/${currentMatch.id}/lineup/${teamId}`, { method: 'PUT', body: JSON.stringify(body) });
+                MDA.toast('Đã lưu đội hình.', 'success');
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+            }
+        }
+
+        /* ----- Tab Kết quả: tỷ số + các chỉ số thống kê trận đấu ----- */
+
+        const RESULT_FIELDS = [
+            ['homeScore', 'awayScore'],
+            ['possessionHome', 'possessionAway'],
+            ['shotsHome', 'shotsAway'],
+            ['yellowCardsHome', 'yellowCardsAway'],
+            ['redCardsHome', 'redCardsAway'],
+            ['cornersHome', 'cornersAway'],
+        ];
+        const RESULT_LABELS = {
+            homeScore: 'Bàn thắng', possessionHome: 'Kiểm soát bóng (%)', shotsHome: 'Cú sút',
+            yellowCardsHome: 'Thẻ vàng', redCardsHome: 'Thẻ đỏ', cornersHome: 'Phạt góc'
+        };
+
+        async function loadResultTab() {
+            const container = document.getElementById('tab-result');
+            container.innerHTML = `<div class="skeleton" style="height:200px"></div>`;
+            let r = null;
+            try {
+                r = await MDA.api(`/api/Matches/${currentMatch.id}/result`);
+            } catch (err) {
+                r = null; // Chưa nhập kết quả cho trận này — dùng mặc định 0
+            }
+            const v = (field) => (r && r[field] !== undefined && r[field] !== null) ? r[field] : 0;
+
+            container.innerHTML = `
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Chỉ số</th><th>${currentMatch.homeTeamName}</th><th>${currentMatch.awayTeamName}</th></tr></thead>
+            <tbody>
+              ${RESULT_FIELDS.map(([homeKey, awayKey]) => `
+                <tr>
+                  <td>${RESULT_LABELS[homeKey]}</td>
+                  <td><input type="number" min="0" id="res-${homeKey}" value="${v(homeKey)}" class="stat-input" style="width:100px;" /></td>
+                  <td><input type="number" min="0" id="res-${awayKey}" value="${v(awayKey)}" class="stat-input" style="width:100px;" /></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <button type="button" class="btn btn-gold mt-16" onclick="saveResult()">Lưu kết quả trận đấu</button>`;
+        }
+
+        async function saveResult() {
+            const body = {};
+            RESULT_FIELDS.flat().forEach(f => {
+                body[f] = Number(document.getElementById(`res-${f}`).value) || 0;
+            });
+            try {
+                await MDA.api(`/api/Matches/${currentMatch.id}/result`, { method: 'PUT', body: JSON.stringify(body) });
+                MDA.toast('Đã lưu kết quả trận đấu.', 'success');
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+            }
+        }
+
+        /* ----- Tab Chỉ số cầu thủ: bàn/kiến tạo/thẻ/điểm của cả 2 đội — API thay
+           toàn bộ chỉ số của trận trong 1 lần gọi nên phải lưu chung 1 nút Lưu ----- */
+
+        async function loadStatsTab() {
+            const container = document.getElementById('tab-stats');
+            container.innerHTML = `<div class="skeleton" style="height:200px"></div>`;
+            try {
+                const [homePlayers, awayPlayers, existing] = await Promise.all([
+                    currentMatchPlayers.home ? Promise.resolve(currentMatchPlayers.home) : MDA.api(`/api/Players?teamId=${currentMatch.homeTeamId}`),
+                    currentMatchPlayers.away ? Promise.resolve(currentMatchPlayers.away) : MDA.api(`/api/Players?teamId=${currentMatch.awayTeamId}`),
+                    MDA.api(`/api/Matches/${currentMatch.id}/player-stats`).catch(() => [])
+                ]);
+                currentMatchPlayers = { home: homePlayers, away: awayPlayers };
+                const existingMap = {};
+                existing.forEach(s => { existingMap[s.playerId] = s; });
+
+                const squadTable = (players, teamLabel) => `
+          <div class="seat-block-title">${teamLabel}</div>
+          <div class="table-wrap mb-16">
+            <table class="data-table">
+              <thead><tr><th>Cầu thủ</th><th>Phút</th><th>Bàn thắng</th><th>Kiến tạo</th><th>Thẻ vàng</th><th>Thẻ đỏ</th><th>Điểm (0-10)</th></tr></thead>
+              <tbody>
+                ${players.map(p => {
+                    const s = existingMap[p.id];
+                    return `
+                    <tr>
+                      <td>${p.fullName} <span class="mono text-faint text-sm">#${p.jerseyNumber}</span></td>
+                      <td><input type="number" min="0" max="120" id="st-min-${p.id}" value="${s ? s.minutesPlayed : 0}" class="stat-input" style="width:64px;" /></td>
+                      <td><input type="number" min="0" max="20" id="st-goals-${p.id}" value="${s ? s.goals : 0}" class="stat-input" style="width:56px;" /></td>
+                      <td><input type="number" min="0" max="20" id="st-assists-${p.id}" value="${s ? s.assists : 0}" class="stat-input" style="width:56px;" /></td>
+                      <td><input type="number" min="0" max="5" id="st-yellow-${p.id}" value="${s ? s.yellowCards : 0}" class="stat-input" style="width:56px;" /></td>
+                      <td><input type="number" min="0" max="2" id="st-red-${p.id}" value="${s ? s.redCards : 0}" class="stat-input" style="width:56px;" /></td>
+                      <td><input type="number" min="0" max="10" step="0.1" id="st-rating-${p.id}" value="${s ? s.rating : 0}" class="stat-input" style="width:64px;" /></td>
+                    </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>`;
+
+                container.innerHTML =
+                    squadTable(homePlayers, currentMatch.homeTeamName) +
+                    squadTable(awayPlayers, currentMatch.awayTeamName) +
+                    `<button type="button" class="btn btn-gold mt-8" onclick="saveStats()">Lưu chỉ số cầu thủ (cả 2 đội)</button>`;
+            } catch (err) {
+                container.innerHTML = `<p class="text-muted text-sm">Không tải được: ${err.message}</p>`;
+            }
+        }
+
+        async function saveStats() {
+            const allPlayers = [...currentMatchPlayers.home, ...currentMatchPlayers.away];
+            const stats = allPlayers.map(p => ({
+                playerId: p.id,
+                minutesPlayed: Number(document.getElementById(`st-min-${p.id}`).value) || 0,
+                goals: Number(document.getElementById(`st-goals-${p.id}`).value) || 0,
+                assists: Number(document.getElementById(`st-assists-${p.id}`).value) || 0,
+                yellowCards: Number(document.getElementById(`st-yellow-${p.id}`).value) || 0,
+                redCards: Number(document.getElementById(`st-red-${p.id}`).value) || 0,
+                rating: Number(document.getElementById(`st-rating-${p.id}`).value) || 0
+            }));
+            try {
+                await MDA.api(`/api/Matches/${currentMatch.id}/player-stats`, { method: 'PUT', body: JSON.stringify({ stats }) });
+                MDA.toast('Đã lưu chỉ số cầu thủ.', 'success');
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

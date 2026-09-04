@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hồ sơ tài khoản — Matchday</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <style>
+        .bio-card {
+            padding: 32px;
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        .bio-avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+            color: #171307;
+            font-family: var(--font-mono);
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .bio-name {
+            font-size: 22px;
+            margin-bottom: 6px;
+        }
+
+        .bio-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1px;
+            background: var(--line-soft);
+            border: 1px solid var(--line-soft);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .bio-info-item {
+            background: var(--bg-elevated);
+            padding: 18px 22px;
+        }
+
+            .bio-info-item .label {
+                font-family: var(--font-mono);
+                font-size: 10.5px;
+                letter-spacing: .08em;
+                text-transform: uppercase;
+                color: var(--text-faint);
+                margin-bottom: 8px;
+            }
+
+            .bio-info-item .value {
+                font-size: 15px;
+                color: var(--text);
+            }
+    </style>
+</head>
+<body>
+
+    <div id="site-header"></div>
+
+    <main>
+        <div class="container center-narrow" style="max-width: 640px;">
+            <div class="page-head">
+                <div class="eyebrow">Tài khoản</div>
+                <h1 style="font-size:26px;">Hồ sơ của bạn</h1>
+                <p>Thông tin tài khoản đăng nhập trên Matchday.</p>
+            </div>
+
+            <div id="bio-content">
+                <div class="card bio-card"><div class="skeleton" style="height:72px; width:72px; border-radius:50%;"></div></div>
+                <div class="skeleton" style="height:180px;"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        if (MDA.requireLogin()) {
+            MDA.renderHeader('account');
+            MDA.renderFooter();
+            load();
+        }
+
+        function roleLabel(role) {
+            return role === 'Admin' ? 'Quản trị viên' : 'Người dùng';
+        }
+
+        async function load() {
+            try {
+                const p = await MDA.api('/api/Auth/me');
+                document.getElementById('bio-content').innerHTML = `
+          <div class="card bio-card fade-in">
+            <div class="bio-avatar">${MDA.initials(p.fullName)}</div>
+            <div>
+              <div class="bio-name">${p.fullName}</div>
+              <span class="badge ${p.role === 'Admin' ? 'badge-upcoming' : 'badge-paid'}">${roleLabel(p.role)}</span>
+            </div>
+          </div>
+
+          <div class="bio-info-grid fade-in">
+            <div class="bio-info-item">
+              <div class="label">Email</div>
+              <div class="value">${p.email}</div>
+            </div>
+            <div class="bio-info-item">
+              <div class="label">Số điện thoại</div>
+              <div class="value">${p.phoneNumber || 'Chưa cập nhật'}</div>
+            </div>
+            <div class="bio-info-item">
+              <div class="label">Vai trò</div>
+              <div class="value">${roleLabel(p.role)}</div>
+            </div>
+            <div class="bio-info-item">
+              <div class="label">Thành viên từ</div>
+              <div class="value mono">${MDA.formatDateTime(p.createdAt).split(' · ')[1]}</div>
+            </div>
+          </div>`;
+            } catch (err) {
+                document.getElementById('bio-content').innerHTML = `<div class="empty-state"><p>${err.message}</p></div>`;
+            }
+        }
+    </script>
+</body>
+</html>

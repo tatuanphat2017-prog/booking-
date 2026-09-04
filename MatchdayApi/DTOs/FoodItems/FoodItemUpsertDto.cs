@@ -11,4 +11,7 @@ public class FoodItemUpsertDto
     public decimal Price { get; set; }
 
     public bool IsAvailable { get; set; } = true;
+
+    [MaxLength(500)]
+    public string? PhotoUrl { get; set; }
 }

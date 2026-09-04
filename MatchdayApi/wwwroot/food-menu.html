@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Đồ ăn &amp; thức uống — Matchday</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <style>
+        .snack-card {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .snack-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gold-wash);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gold);
+        }
+
+        .snack-photo {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            margin: -4px -4px 4px;
+            width: calc(100% + 8px);
+        }
+
+        .snack-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="site-header"></div>
+
+    <main>
+        <div class="container">
+            <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap; border-bottom:1px solid var(--line-soft); padding-bottom:20px;">
+                <h1 style="font-size:26px;">Thực đơn sân vận động</h1>
+                <p class="text-muted text-sm" style="max-width:400px; margin:0;">Chọn số lượng ngay trong bước đặt vé — giao tới đúng chỗ ngồi giờ nghỉ giữa hiệp.</p>
+            </div>
+
+            <div id="snack-list" class="snack-grid">
+                <div class="skeleton" style="height:110px"></div>
+                <div class="skeleton" style="height:110px"></div>
+                <div class="skeleton" style="height:110px"></div>
+                <div class="skeleton" style="height:110px"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        MDA.renderHeader('food');
+        MDA.renderFooter();
+
+        function snackCard(f) {
+            const media = f.photoUrl
+                ? `<img class="snack-photo" src="${f.photoUrl}" alt="${f.name}" onerror="this.replaceWith(Object.assign(document.createElement('div'), { className: 'snack-icon', innerHTML: MDA.icon('food') }));" />`
+                : `<div class="snack-icon">${MDA.icon('food')}</div>`;
+            return `
+        <div class="card snack-card fade-in">
+          ${media}
+          <div style="font-weight:600; font-size:15px;">${f.name}</div>
+          <div class="mono text-gold">${MDA.money(f.price)}</div>
+        </div>`;
+        }
+
+        async function load() {
+            try {
+                const items = await MDA.api('/api/FoodItems?onlyAvailable=true');
+                const list = document.getElementById('snack-list');
+                list.innerHTML = items.length
+                    ? items.map(snackCard).join('')
+                    : `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">${MDA.icon('food')}</div><p>Hiện chưa có món ăn/thức uống nào được mở bán.</p></div>`;
+            } catch (err) {
+                MDA.toast('Không tải được thực đơn: ' + err.message, 'error');
+            }
+        }
+
+        load();
+    </script>
+</body>
+</html>

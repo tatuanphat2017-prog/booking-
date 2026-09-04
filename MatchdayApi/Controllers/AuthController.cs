@@ -93,16 +93,33 @@ public class AuthController : ControllerBase
         });
     }
 
-    /// <summary>Trả về thông tin user hiện tại dựa trên token — dùng để test Authorize hoạt động đúng.</summary>
+    /// <summary>
+    /// Trả về thông tin đầy đủ của user hiện tại (dùng cho trang "Bio" — hồ sơ tài khoản).
+    /// Đọc Id từ claim NameIdentifier trong token rồi truy DB lấy dữ liệu mới nhất, thay vì tin thẳng
+    /// vào các claim khác trong token (token có thể đã cấp từ lâu, dữ liệu user có thể đã đổi).
+    /// </summary>
     [Authorize]
     [HttpGet("me")]
-    public IActionResult Me()
+    public async Task<ActionResult<UserProfileDto>> Me()
     {
-        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
-        var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
-        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        var idClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(idClaim, out var userId))
+        {
+            return Unauthorized();
+        }
 
-        return Ok(new { email, name, role });
+        var user = await _db.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null) return NotFound();
+
+        return Ok(new UserProfileDto
+        {
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            Role = user.Role.Name,
+            CreatedAt = user.CreatedAt
+        });
     }
 
     /// <summary>Endpoint chỉ Admin mới gọi được — dùng để test phân quyền theo Role.</summary>

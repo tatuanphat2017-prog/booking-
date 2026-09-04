@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản trị · Hoàn tiền — Matchday</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+    <div id="site-header"></div>
+
+    <main>
+        <div class="container">
+            <div class="page-head">
+                <div class="eyebrow">Khu vực quản trị</div>
+                <h1 style="font-size:26px;">Yêu cầu hoàn tiền</h1>
+            </div>
+
+            <div id="admin-nav" class="admin-tabs"></div>
+
+            <div class="flex gap-8 mb-16" id="filter-tabs">
+                <button class="btn btn-sm btn-gold" data-status="">Tất cả</button>
+                <button class="btn btn-sm btn-ghost" data-status="Pending">Chờ duyệt</button>
+                <button class="btn btn-sm btn-ghost" data-status="Approved">Đã duyệt</button>
+                <button class="btn btn-sm btn-ghost" data-status="Rejected">Bị từ chối</button>
+            </div>
+
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Lý do</th>
+                            <th>Số tiền</th>
+                            <th>Ngày yêu cầu</th>
+                            <th>Trạng thái</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="refund-body">
+                        <tr><td colspan="6"><div class="skeleton" style="height:20px"></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+if (MDA.requireAdmin()) {
+  MDA.renderHeader('admin');
+  MDA.renderAdminNav('refunds');
+  MDA.renderFooter();
+  load('');
+}
+
+document.getElementById('filter-tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-status]');
+  if (!btn) return;
+  document.querySelectorAll('#filter-tabs button').forEach(b => { b.className = 'btn btn-sm btn-ghost'; });
+  btn.className = 'btn btn-sm btn-gold';
+  load(btn.dataset.status);
+});
+
+function currentStatus() {
+  const active = document.querySelector('#filter-tabs .btn-gold');
+  return active ? active.dataset.status : '';
+}
+
+/* RefundDto.status dùng chung enum tên "Pending" với BookingStatus, nhưng
+   MDA.statusBadge() gắn nhãn "Chờ thanh toán" cho Pending (ngữ cảnh đơn vé) —
+   ở đây cần nhãn riêng "Chờ duyệt" cho ngữ cảnh hoàn tiền. */
+function refundBadge(status) {
+  if (status === 'Pending') return `<span class="badge badge-pending">Chờ duyệt</span>`;
+  return MDA.statusBadge(status);
+}
+
+async function load(status) {
+  const body = document.getElementById('refund-body');
+  body.innerHTML = `<tr><td colspan="6"><div class="skeleton" style="height:20px"></div></td></tr>`;
+  try {
+    const path = status ? `/api/Refunds?status=${status}` : '/api/Refunds';
+    const rows = await MDA.api(path);
+    body.innerHTML = rows.length ? rows.map(rowHtml).join('') : `<tr><td colspan="6" class="text-muted text-center">Không có yêu cầu nào.</td></tr>`;
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="6" class="text-muted text-center">${err.message}</td></tr>`;
+  }
+}
+
+function rowHtml(r) {
+  const actions = r.status === 'Pending'
+    ? `<div class="row-actions">
+         <button class="btn btn-sm btn-gold" onclick="approve(${r.id})">Duyệt</button>
+         <button class="btn btn-sm btn-danger" onclick="reject(${r.id})">Từ chối</button>
+       </div>`
+    : '';
+  return `
+    <tr>
+      <td class="mono">${r.bookingCode || '#' + r.bookingId}</td>
+      <td style="max-width:260px;">${r.reason || '—'}</td>
+      <td class="mono text-gold">${MDA.money(r.amount)}</td>
+      <td class="mono text-sm text-muted">${MDA.formatDateTime(r.requestedAt)}</td>
+      <td>${refundBadge(r.status)}</td>
+      <td>${actions}</td>
+    </tr>`;
+}
+
+async function approve(id) {
+  if (!confirm('Duyệt yêu cầu hoàn tiền này? Đơn vé sẽ được đánh dấu đã hoàn tiền.')) return;
+  try {
+    await MDA.api(`/api/Refunds/${id}/approve`, { method: 'POST' });
+    MDA.toast('Đã duyệt yêu cầu hoàn tiền.', 'success');
+    load(currentStatus());
+  } catch (err) {
+    MDA.toast(err.message, 'error');
+  }
+}
+
+async function reject(id) {
+  if (!confirm('Từ chối yêu cầu hoàn tiền này?')) return;
+  try {
+    await MDA.api(`/api/Refunds/${id}/reject`, { method: 'POST' });
+    MDA.toast('Đã từ chối yêu cầu.', 'success');
+    load(currentStatus());
+  } catch (err) {
+    MDA.toast(err.message, 'error');
+  }
+}
+    </script>
+</body>
+</html>

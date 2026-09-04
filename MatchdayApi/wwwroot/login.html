@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Đăng nhập — Matchday</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+    <div id="site-header"></div>
+
+    <main>
+        <div class="container">
+
+            <!-- Đăng nhập được trình bày như 1 tấm "vé thành viên" — dùng lại đúng component .ticket
+                 (chữ ký thị giác của cả site) thay vì 1 card nổi giữa màn hình kiểu SaaS chung chung. -->
+            <div class="ticket fade-in" style="max-width:640px; margin:52px auto 0; --stub-w: 210px;">
+                <div class="ticket-info" style="padding:34px 36px;">
+                    <div class="eyebrow">Matchday · Tài khoản</div>
+                    <h1 style="font-size:24px; margin-bottom:22px;">Chào mừng trở lại</h1>
+
+                    <div class="flex gap-8 mb-16" style="border-bottom:1px solid var(--line-soft);">
+                        <button class="btn btn-ghost" id="tab-login" style="border:none;border-radius:0;border-bottom:2px solid var(--gold);color:var(--text);">Đăng nhập</button>
+                        <button class="btn btn-ghost" id="tab-register" style="border:none;border-radius:0;">Đăng ký</button>
+                    </div>
+
+                    <!-- LOGIN FORM -->
+                    <form id="form-login">
+                        <div class="field">
+                            <label>Email</label>
+                            <input type="email" id="login-email" required placeholder="ban@vidu.com" />
+                        </div>
+                        <div class="field">
+                            <label>Mật khẩu</label>
+                            <input type="password" id="login-password" required placeholder="••••••••" />
+                        </div>
+                        <button type="submit" class="btn btn-gold btn-block" id="login-submit">Đăng nhập</button>
+                    </form>
+
+                    <!-- REGISTER FORM -->
+                    <form id="form-register" style="display:none;">
+                        <div class="field">
+                            <label>Họ và tên</label>
+                            <input type="text" id="reg-fullname" required placeholder="Nguyễn Văn A" />
+                        </div>
+                        <div class="field">
+                            <label>Email</label>
+                            <input type="email" id="reg-email" required placeholder="ban@vidu.com" />
+                        </div>
+                        <div class="field">
+                            <label>Số điện thoại (không bắt buộc)</label>
+                            <input type="tel" id="reg-phone" placeholder="09xxxxxxxx" />
+                        </div>
+                        <div class="field">
+                            <label>Mật khẩu</label>
+                            <input type="password" id="reg-password" required minlength="6" placeholder="Tối thiểu 6 ký tự" />
+                        </div>
+                        <button type="submit" class="btn btn-gold btn-block" id="register-submit">Tạo tài khoản</button>
+                    </form>
+                </div>
+
+                <div class="ticket-stub">
+                    <span class="notch-top"></span>
+                    <span class="stub-label">Vé thành viên</span>
+                    <div class="login-ticket-icon" style="margin:8px 0; color:var(--gold-bright); display:flex; justify-content:center;"></div>
+                    <span class="stub-value" style="font-size:13px; font-weight:500; line-height:1.6; letter-spacing:.02em;">Chọn ghế realtime<br />Vé QR &amp; đồ ăn<br />Quản lý đơn hàng</span>
+                    <span class="notch-bottom"></span>
+                </div>
+            </div>
+
+            <p class="text-center text-sm text-muted mt-16" style="max-width:640px; margin-left:auto; margin-right:auto;">Dữ liệu đội bóng/cầu thủ trong hệ thống là dữ liệu demo — dùng cho mục đích học tập.</p>
+
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        MDA.renderHeader();
+        MDA.renderFooter();
+        document.querySelector('.login-ticket-icon').innerHTML = MDA.icon('ticket');
+
+        if (MDA.isLoggedIn()) {
+            window.location.href = 'index.html';
+        }
+
+        const tabLogin = document.getElementById('tab-login');
+        const tabRegister = document.getElementById('tab-register');
+        const formLogin = document.getElementById('form-login');
+        const formRegister = document.getElementById('form-register');
+
+        function activate(tab) {
+            const loginActive = tab === 'login';
+            formLogin.style.display = loginActive ? 'block' : 'none';
+            formRegister.style.display = loginActive ? 'none' : 'block';
+            tabLogin.style.borderBottom = loginActive ? '2px solid var(--gold)' : 'none';
+            tabLogin.style.color = loginActive ? 'var(--text)' : '';
+            tabRegister.style.borderBottom = loginActive ? 'none' : '2px solid var(--gold)';
+            tabRegister.style.color = loginActive ? '' : 'var(--text)';
+        }
+        tabLogin.addEventListener('click', () => activate('login'));
+        tabRegister.addEventListener('click', () => activate('register'));
+
+        function redirectAfterAuth() {
+            const next = MDA.qs('next');
+            window.location.href = next || 'index.html';
+        }
+
+        formLogin.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('login-submit');
+            btn.disabled = true; btn.textContent = 'Đang đăng nhập...';
+            try {
+                const res = await MDA.api('/api/Auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        email: document.getElementById('login-email').value.trim(),
+                        password: document.getElementById('login-password').value
+                    })
+                });
+                MDA.saveSession(res);
+                MDA.toast(`Chào mừng trở lại, ${res.fullName}!`, 'success');
+                redirectAfterAuth();
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+                btn.disabled = false; btn.textContent = 'Đăng nhập';
+            }
+        });
+
+        formRegister.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('register-submit');
+            btn.disabled = true; btn.textContent = 'Đang tạo tài khoản...';
+            try {
+                const res = await MDA.api('/api/Auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        fullName: document.getElementById('reg-fullname').value.trim(),
+                        email: document.getElementById('reg-email').value.trim(),
+                        phoneNumber: document.getElementById('reg-phone').value.trim() || null,
+                        password: document.getElementById('reg-password').value
+                    })
+                });
+                MDA.saveSession(res);
+                MDA.toast(`Tạo tài khoản thành công, chào ${res.fullName}!`, 'success');
+                redirectAfterAuth();
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+                btn.disabled = false; btn.textContent = 'Tạo tài khoản';
+            }
+        });
+    </script>
+</body>
+</html>

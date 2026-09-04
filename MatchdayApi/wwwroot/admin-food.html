@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản trị · Đồ ăn — Matchday</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+    <div id="site-header"></div>
+
+    <main>
+        <div class="container">
+            <div class="page-head">
+                <div class="eyebrow">Khu vực quản trị</div>
+                <h1 style="font-size:26px;">Đồ ăn &amp; thức uống</h1>
+                <p>Quản lý menu bán kèm vé. Món đã từng có trong 1 đơn vé thì không xóa được — hãy tắt "Đang bán" để ngừng bán mà vẫn giữ lịch sử đơn hàng cũ.</p>
+            </div>
+
+            <div id="admin-nav" class="admin-tabs"></div>
+
+            <div class="card admin-panel">
+                <div class="admin-panel-head">
+                    <h2 id="food-form-title">Thêm món</h2>
+                </div>
+                <form id="food-form">
+                    <div class="form-grid">
+                        <div class="field"><label>Tên món</label><input type="text" id="food-name" maxlength="200" required /></div>
+                        <div class="field"><label>Giá (đ)</label><input type="number" id="food-price" min="0" step="1000" required /></div>
+                    </div>
+                    <div class="field"><label>URL ảnh (tùy chọn — dán link ảnh từ internet)</label><input type="text" id="food-photo" maxlength="500" placeholder="https://..." /></div>
+                    <div id="food-photo-preview" style="display:none; margin-bottom:18px;">
+                        <img id="food-photo-preview-img" src="" alt="" style="width:80px; height:80px; object-fit:cover; border-radius:var(--radius-sm); border:1px solid var(--line);" />
+                    </div>
+                    <div class="checkbox-field">
+                        <input type="checkbox" id="food-available" checked />
+                        <label for="food-available">Đang bán (hiển thị cho khách khi đặt vé)</label>
+                    </div>
+                    <div class="row-actions">
+                        <button type="button" class="btn btn-ghost btn-sm" id="food-cancel-btn" style="display:none;" onclick="resetFoodForm()">Hủy sửa</button>
+                        <button type="submit" class="btn btn-gold btn-sm" id="food-submit-btn">Thêm món</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="admin-panel-head" style="margin-bottom:14px;">
+                <div class="flex gap-8" id="filter-tabs">
+                    <button class="btn btn-sm btn-gold" data-filter="all">Tất cả</button>
+                    <button class="btn btn-sm btn-ghost" data-filter="available">Đang bán</button>
+                    <button class="btn btn-sm btn-ghost" data-filter="hidden">Ngừng bán</button>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead><tr><th>Ảnh</th><th>Tên món</th><th>Giá</th><th>Trạng thái</th><th></th></tr></thead>
+                    <tbody id="food-body"><tr><td colspan="5"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        if (MDA.requireAdmin()) {
+            MDA.renderHeader('admin');
+            MDA.renderAdminNav('food');
+            MDA.renderFooter();
+            loadFoodItems();
+        }
+
+        let foodItemsCache = [];
+        let editFoodId = null;
+        let currentFilter = 'all';
+
+        document.getElementById('filter-tabs').addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-filter]');
+            if (!btn) return;
+            document.querySelectorAll('#filter-tabs button').forEach(b => { b.className = 'btn btn-sm btn-ghost'; });
+            btn.className = 'btn btn-sm btn-gold';
+            currentFilter = btn.dataset.filter;
+            renderFoodTable();
+        });
+
+        async function loadFoodItems() {
+            const body = document.getElementById('food-body');
+            body.innerHTML = `<tr><td colspan="5"><div class="skeleton" style="height:20px"></div></td></tr>`;
+            try {
+                // Không truyền onlyAvailable để lấy TẤT CẢ món (kể cả đang tắt bán) — đúng theo
+                // ghi chú của API: bỏ trống tham số này là dành cho trang quản lý của Admin.
+                foodItemsCache = await MDA.api('/api/FoodItems');
+                renderFoodTable();
+            } catch (err) {
+                body.innerHTML = `<tr><td colspan="5" class="text-muted text-center">${err.message}</td></tr>`;
+            }
+        }
+
+        function foodThumbHtml(url) {
+            return url
+                ? `<img src="${url}" alt="" style="width:44px; height:44px; object-fit:cover; border-radius:var(--radius-sm); border:1px solid var(--line);" onerror="this.style.display='none';" />`
+                : `<div style="width:44px; height:44px; border-radius:var(--radius-sm); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--text-faint);">${MDA.icon('food')}</div>`;
+        }
+
+        function renderFoodTable() {
+            const body = document.getElementById('food-body');
+            let rows = foodItemsCache;
+            if (currentFilter === 'available') rows = rows.filter(f => f.isAvailable);
+            if (currentFilter === 'hidden') rows = rows.filter(f => !f.isAvailable);
+
+            body.innerHTML = rows.length ? rows.map(f => `
+        <tr>
+          <td>${foodThumbHtml(f.photoUrl)}</td>
+          <td>${f.name}</td>
+          <td class="mono text-gold">${MDA.money(f.price)}</td>
+          <td>${f.isAvailable
+                    ? `<span class="badge badge-paid">Đang bán</span>`
+                    : `<span class="badge badge-finished">Ngừng bán</span>`}</td>
+          <td>
+            <div class="row-actions">
+              <button class="btn btn-sm btn-ghost" onclick="toggleAvailable(${f.id})">${f.isAvailable ? 'Tắt bán' : 'Mở bán'}</button>
+              <button class="btn btn-sm btn-ghost" onclick='editFood(${JSON.stringify(f)})'>Sửa</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteFood(${f.id})">Xóa</button>
+            </div>
+          </td>
+        </tr>`).join('') : `<tr><td colspan="5" class="text-muted text-center">Không có món nào.</td></tr>`;
+        }
+
+        document.getElementById('food-photo').addEventListener('input', (e) => {
+            const url = e.target.value.trim();
+            const preview = document.getElementById('food-photo-preview');
+            const img = document.getElementById('food-photo-preview-img');
+            if (url) {
+                img.src = url;
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+
+        document.getElementById('food-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dto = {
+                name: document.getElementById('food-name').value.trim(),
+                price: Number(document.getElementById('food-price').value),
+                isAvailable: document.getElementById('food-available').checked,
+                photoUrl: document.getElementById('food-photo').value.trim() || null,
+            };
+            try {
+                if (editFoodId) {
+                    await MDA.api(`/api/FoodItems/${editFoodId}`, { method: 'PUT', body: JSON.stringify(dto) });
+                    MDA.toast('Đã cập nhật món.', 'success');
+                } else {
+                    await MDA.api('/api/FoodItems', { method: 'POST', body: JSON.stringify(dto) });
+                    MDA.toast('Đã thêm món.', 'success');
+                }
+                resetFoodForm();
+                await loadFoodItems();
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+            }
+        });
+
+        function editFood(f) {
+            editFoodId = f.id;
+            document.getElementById('food-name').value = f.name;
+            document.getElementById('food-price').value = f.price;
+            document.getElementById('food-available').checked = f.isAvailable;
+            document.getElementById('food-photo').value = f.photoUrl || '';
+            document.getElementById('food-photo').dispatchEvent(new Event('input'));
+            document.getElementById('food-form-title').textContent = `Sửa món: ${f.name}`;
+            document.getElementById('food-submit-btn').textContent = 'Lưu thay đổi';
+            document.getElementById('food-cancel-btn').style.display = '';
+            document.getElementById('food-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function resetFoodForm() {
+            editFoodId = null;
+            document.getElementById('food-form').reset();
+            document.getElementById('food-available').checked = true;
+            document.getElementById('food-photo-preview').style.display = 'none';
+            document.getElementById('food-form-title').textContent = 'Thêm món';
+            document.getElementById('food-submit-btn').textContent = 'Thêm món';
+            document.getElementById('food-cancel-btn').style.display = 'none';
+        }
+
+        async function toggleAvailable(id) {
+            const f = foodItemsCache.find(x => x.id === id);
+            if (!f) return;
+            try {
+                await MDA.api(`/api/FoodItems/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ name: f.name, price: f.price, isAvailable: !f.isAvailable, photoUrl: f.photoUrl || null }),
+                });
+                MDA.toast(f.isAvailable ? 'Đã tắt bán món này.' : 'Đã mở bán món này.', 'success');
+                await loadFoodItems();
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+            }
+        }
+
+        async function deleteFood(id) {
+            if (!confirm('Xóa món này? (nếu món đã từng có trong đơn vé nào đó thì sẽ không xóa được — hãy dùng "Tắt bán" thay thế)')) return;
+            try {
+                await MDA.api(`/api/FoodItems/${id}`, { method: 'DELETE' });
+                MDA.toast('Đã xóa món.', 'success');
+                await loadFoodItems();
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

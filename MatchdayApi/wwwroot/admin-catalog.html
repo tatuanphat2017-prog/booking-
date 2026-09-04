@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản trị · Dữ liệu nền — Matchday</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+
+    <div id="site-header"></div>
+
+    <main>
+        <div class="container">
+            <div class="page-head">
+                <div class="eyebrow">Khu vực quản trị</div>
+                <h1 style="font-size:26px;">Dữ liệu nền</h1>
+                <p>Quản lý sân vận động, đội bóng, cầu thủ và khối ghế/ghế dùng chung cho toàn hệ thống.</p>
+            </div>
+
+            <div id="admin-nav" class="admin-tabs"></div>
+
+            <div class="admin-tabs">
+                <button type="button" class="admin-tab active" id="ctab-stadiums" onclick="switchCatalogTab('stadiums')">Sân vận động</button>
+                <button type="button" class="admin-tab" id="ctab-teams" onclick="switchCatalogTab('teams')">Đội bóng</button>
+                <button type="button" class="admin-tab" id="ctab-players" onclick="switchCatalogTab('players')">Cầu thủ</button>
+                <button type="button" class="admin-tab" id="ctab-seatblocks" onclick="switchCatalogTab('seatblocks')">Khối ghế</button>
+            </div>
+
+            <!-- ===== SÂN VẬN ĐỘNG ===== -->
+            <div id="tab-stadiums">
+                <div class="card admin-panel">
+                    <div class="admin-panel-head">
+                        <h2 id="stadium-form-title">Thêm sân vận động</h2>
+                    </div>
+                    <form id="stadium-form">
+                        <div class="form-grid">
+                            <div class="field"><label>Tên sân</label><input type="text" id="stadium-name" maxlength="200" required /></div>
+                            <div class="field"><label>Thành phố</label><input type="text" id="stadium-city" maxlength="100" required /></div>
+                            <div class="field"><label>Sức chứa</label><input type="number" id="stadium-capacity" min="1" max="300000" required /></div>
+                        </div>
+                        <div class="field"><label>Địa chỉ</label><input type="text" id="stadium-address" maxlength="300" required /></div>
+                        <div class="row-actions">
+                            <button type="button" class="btn btn-ghost btn-sm" id="stadium-cancel-btn" style="display:none;" onclick="resetStadiumForm()">Hủy sửa</button>
+                            <button type="submit" class="btn btn-gold btn-sm" id="stadium-submit-btn">Thêm sân</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead><tr><th>Tên sân</th><th>Thành phố</th><th>Địa chỉ</th><th>Sức chứa</th><th></th></tr></thead>
+                        <tbody id="stadium-body"><tr><td colspan="5"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== ĐỘI BÓNG ===== -->
+            <div id="tab-teams" style="display:none;">
+                <div class="card admin-panel">
+                    <div class="admin-panel-head">
+                        <h2 id="team-form-title">Thêm đội bóng</h2>
+                    </div>
+                    <form id="team-form">
+                        <div class="form-grid">
+                            <div class="field"><label>Tên đội</label><input type="text" id="team-name" maxlength="150" required /></div>
+                            <div class="field"><label>Tên viết tắt</label><input type="text" id="team-shortname" maxlength="10" required /></div>
+                            <div class="field"><label>Sân nhà</label><select id="team-stadium"><option value="">— Không chọn —</option></select></div>
+                        </div>
+                        <div class="field"><label>URL logo (tùy chọn)</label><input type="text" id="team-logo" maxlength="500" placeholder="https://..." /></div>
+                        <div class="row-actions">
+                            <button type="button" class="btn btn-ghost btn-sm" id="team-cancel-btn" style="display:none;" onclick="resetTeamForm()">Hủy sửa</button>
+                            <button type="submit" class="btn btn-gold btn-sm" id="team-submit-btn">Thêm đội</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead><tr><th>Tên đội</th><th>Viết tắt</th><th>Sân nhà</th><th></th></tr></thead>
+                        <tbody id="team-body"><tr><td colspan="4"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== CẦU THỦ ===== -->
+            <div id="tab-players" style="display:none;">
+                <div class="card admin-panel">
+                    <div class="admin-panel-head">
+                        <h2 id="player-form-title">Thêm cầu thủ</h2>
+                    </div>
+                    <form id="player-form">
+                        <div class="form-grid">
+                            <div class="field"><label>Họ tên</label><input type="text" id="player-name" maxlength="150" required /></div>
+                            <div class="field"><label>Số áo</label><input type="number" id="player-jersey" min="0" max="99" required /></div>
+                            <div class="field"><label>Đội bóng</label><select id="player-team" required><option value="">-- Chọn đội --</option></select></div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="field">
+                                <label>Vị trí sở trường</label>
+                                <select id="player-position" required>
+                                    <option value="">-- Chọn vị trí --</option>
+                                    <optgroup label="Thủ môn">
+                                        <option value="GK">GK — Thủ môn</option>
+                                    </optgroup>
+                                    <optgroup label="Hậu vệ">
+                                        <option value="CB">CB — Trung vệ</option>
+                                        <option value="LB">LB — Hậu vệ trái</option>
+                                        <option value="RB">RB — Hậu vệ phải</option>
+                                        <option value="LWB">LWB — Hậu vệ cánh trái</option>
+                                        <option value="RWB">RWB — Hậu vệ cánh phải</option>
+                                    </optgroup>
+                                    <optgroup label="Tiền vệ phòng ngự">
+                                        <option value="CDM">CDM — Tiền vệ trụ</option>
+                                        <option value="DM">DM — Tiền vệ phòng ngự</option>
+                                    </optgroup>
+                                    <optgroup label="Tiền vệ trung tâm">
+                                        <option value="CM">CM — Tiền vệ trung tâm</option>
+                                        <option value="LM">LM — Tiền vệ cánh trái</option>
+                                        <option value="RM">RM — Tiền vệ cánh phải</option>
+                                    </optgroup>
+                                    <optgroup label="Tiền vệ tấn công">
+                                        <option value="CAM">CAM — Tiền vệ tấn công trung tâm</option>
+                                        <option value="AM">AM — Tiền vệ tấn công</option>
+                                    </optgroup>
+                                    <optgroup label="Tiền đạo">
+                                        <option value="LW">LW — Chạy cánh trái</option>
+                                        <option value="RW">RW — Chạy cánh phải</option>
+                                        <option value="CF">CF — Tiền đạo lùi</option>
+                                        <option value="ST">ST — Tiền đạo cắm</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="field"><label>Ngày sinh (tùy chọn)</label><input type="date" id="player-dob" /></div>
+                        </div>
+                        <div class="field"><label>URL ảnh (tùy chọn)</label><input type="text" id="player-photo" maxlength="500" placeholder="https://..." /></div>
+                        <div class="row-actions">
+                            <button type="button" class="btn btn-ghost btn-sm" id="player-cancel-btn" style="display:none;" onclick="resetPlayerForm()">Hủy sửa</button>
+                            <button type="submit" class="btn btn-gold btn-sm" id="player-submit-btn">Thêm cầu thủ</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="admin-panel-head" style="margin-bottom:14px;">
+                    <div class="field" style="margin:0; min-width:240px;">
+                        <label>Lọc theo đội</label>
+                        <select id="player-filter-team" onchange="loadPlayers()"><option value="">Tất cả đội</option></select>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead><tr><th>Áo</th><th>Họ tên</th><th>Vị trí</th><th>Đội bóng</th><th>Ngày sinh</th><th></th></tr></thead>
+                        <tbody id="player-body"><tr><td colspan="6"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ===== KHỐI GHẾ ===== -->
+            <div id="tab-seatblocks" style="display:none;">
+                <div class="card admin-panel">
+                    <div class="admin-panel-head">
+                        <h2 id="seatblock-form-title">Thêm khối ghế</h2>
+                    </div>
+                    <form id="seatblock-form">
+                        <div class="form-grid">
+                            <div class="field"><label>Tên khối</label><input type="text" id="seatblock-name" maxlength="100" placeholder="VD: Khán đài A" required /></div>
+                            <div class="field"><label>Giá cơ bản (đ)</label><input type="number" id="seatblock-price" min="0" step="1000" required /></div>
+                            <div class="field"><label>Sân vận động</label><select id="seatblock-stadium" required><option value="">-- Chọn sân --</option></select></div>
+                        </div>
+                        <div class="row-actions">
+                            <button type="button" class="btn btn-ghost btn-sm" id="seatblock-cancel-btn" style="display:none;" onclick="resetSeatBlockForm()">Hủy sửa</button>
+                            <button type="submit" class="btn btn-gold btn-sm" id="seatblock-submit-btn">Thêm khối ghế</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="admin-panel-head" style="margin-bottom:14px;">
+                    <div class="field" style="margin:0; min-width:240px;">
+                        <label>Lọc theo sân</label>
+                        <select id="seatblock-filter-stadium" onchange="loadSeatBlocks()"><option value="">Tất cả sân</option></select>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead><tr><th>Tên khối</th><th>Sân vận động</th><th>Giá cơ bản</th><th>Số ghế</th><th></th></tr></thead>
+                        <tbody id="seatblock-body"><tr><td colspan="5"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
+                    </table>
+                </div>
+
+                <div class="card admin-panel" id="seat-manager" style="display:none;">
+                    <div class="admin-panel-head">
+                        <h2 id="seat-manager-title">Quản lý ghế</h2>
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="closeSeatManager()">Đóng</button>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="field"><label>Hàng ghế (VD: A)</label><input type="text" id="seat-row" maxlength="5" /></div>
+                        <div class="field"><label>Số ghế</label><input type="number" id="seat-number" min="1" max="999" /></div>
+                        <div class="field" style="display:flex; align-items:flex-end;">
+                            <button type="button" class="btn btn-gold btn-sm" style="width:100%;" onclick="addSingleSeat()">Thêm 1 ghế</button>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Tạo nhanh nhiều ghế</div>
+                    <div class="form-grid">
+                        <div class="field"><label>Từ hàng (VD: A)</label><input type="text" id="bulk-row-from" maxlength="5" /></div>
+                        <div class="field"><label>Đến hàng (VD: J)</label><input type="text" id="bulk-row-to" maxlength="5" /></div>
+                        <div class="field"><label>Số ghế mỗi hàng</label><input type="number" id="bulk-seat-count" min="1" max="200" /></div>
+                        <div class="field" style="display:flex; align-items:flex-end;">
+                            <button type="button" class="btn btn-ghost btn-sm" style="width:100%;" onclick="bulkGenerateSeats()">Tạo hàng loạt</button>
+                        </div>
+                    </div>
+                    <p class="text-muted text-sm" id="bulk-progress"></p>
+
+                    <div class="table-wrap">
+                        <table class="data-table">
+                            <thead><tr><th>Hàng</th><th>Số ghế</th><th></th></tr></thead>
+                            <tbody id="seat-body"><tr><td colspan="3" class="text-muted text-center">Đang tải...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+if (MDA.requireAdmin()) {
+  MDA.renderHeader('admin');
+  MDA.renderAdminNav('catalog');
+  MDA.renderFooter();
+  init();
+}
+
+let stadiumsCache = [];
+let teamsCache = [];
+let editStadiumId = null;
+let editTeamId = null;
+let editPlayerId = null;
+let editSeatBlockId = null;
+let activeSeatBlock = null;
+
+async function init() {
+  await loadStadiums();
+  await loadTeams();
+  await loadPlayers();
+  await loadSeatBlocks();
+}
+
+function switchCatalogTab(tab) {
+  ['stadiums', 'teams', 'players', 'seatblocks'].forEach(t => {
+    document.getElementById(`ctab-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none';
+  });
+  if (tab !== 'seatblocks') closeSeatManager();
+}
+
+/* ============== SÂN VẬN ĐỘNG ============== */
+
+async function loadStadiums() {
+  try {
+    stadiumsCache = await MDA.api('/api/Stadiums');
+    renderStadiumTable();
+    populateStadiumSelects();
+  } catch (err) {
+    MDA.toast('Không tải được danh sách sân: ' + err.message, 'error');
+  }
+}
+
+function renderStadiumTable() {
+  const body = document.getElementById('stadium-body');
+  body.innerHTML = stadiumsCache.length ? stadiumsCache.map(s => `
+    <tr>
+      <td>${s.name}</td>
+      <td>${s.city}</td>
+      <td class="text-muted text-sm">${s.address}</td>
+      <td class="mono">${s.capacity.toLocaleString('vi-VN')}</td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-sm btn-ghost" onclick="editStadium(${s.id})">Sửa</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteStadium(${s.id})">Xóa</button>
+        </div>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="5" class="text-muted text-center">Chưa có sân vận động nào.</td></tr>`;
+}
+
+function populateStadiumSelects() {
+  const opts = stadiumsCache.map(s => `<option value="${s.id}">${s.name} (${s.city})</option>`).join('');
+  document.getElementById('team-stadium').innerHTML = `<option value="">— Không chọn —</option>${opts}`;
+  document.getElementById('seatblock-stadium').innerHTML = `<option value="">-- Chọn sân --</option>${opts}`;
+  document.getElementById('seatblock-filter-stadium').innerHTML = `<option value="">Tất cả sân</option>${opts}`;
+}
+
+document.getElementById('stadium-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const dto = {
+    name: document.getElementById('stadium-name').value.trim(),
+    address: document.getElementById('stadium-address').value.trim(),
+    city: document.getElementById('stadium-city').value.trim(),
+    capacity: Number(document.getElementById('stadium-capacity').value),
+  };
+  try {
+    if (editStadiumId) {
+      await MDA.api(`/api/Stadiums/${editStadiumId}`, { method: 'PUT', body: JSON.stringify(dto) });
+      MDA.toast('Đã cập nhật sân vận động.', 'success');
+    } else {
+      await MDA.api('/api/Stadiums', { method: 'POST', body: JSON.stringify(dto) });
+      MDA.toast('Đã thêm sân vận động.', 'success');
+    }
+    resetStadiumForm();
+    await loadStadiums();
+  } catch (err) {
+    MDA.toast(err.message, 'error');
+  }
+});
+
+function editStadium(id) {
+  const s = stadiumsCache.find(x => x.id === id);
+  if (!s) return;
+  editStadiumId = id;
+  document.getElementById('stadium-name').value = s.name;
+  document.getElementById('stadium-address').value = s.address;
+  document.getElementById('stadium-city').value = s.city;
+  document.getElementById('stadium-capacity').value = s.capacity;
+  document.getElementById('stadium-form-title').textContent = `Sửa sân: ${s.name}`;
+  document.getElementById('stadium-submit-btn').textContent = 'Lưu thay đổi';
+  document.getElementById('stadium-cancel-btn').style.display = '';
+  document.getElementById('stadium-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetStadiumForm() {
+  editStadiumId = null;
+  document.getElementById('stadium-form').reset();
+  document.getElementById('stadium-form-title').textContent = 'Thêm sân vận động';
+  document.getElementById('stadium-submit-btn').textContent = 'Thêm sân';
+  document.getElementById('stadium-cancel-btn').style.display = 'none';
+}
+
+async function deleteStadium(id) {
+  if (!confirm('Xóa sân vận động này?')) return;
+  try {
+    await MDA.api(`/api/Stadiums/${id}`, { method: 'DELETE' });
+    MDA.toast('Đã xóa sân vận động.', 'success');
+    await loadStadiums();
+  } catch (err) {
+    MDA.toast(err.message, 'error');
+  }
+}
+
+/* ============== ĐỘI BÓNG ============== */
+
+async function loadTeams() {
+  try {
+    teamsCache = await MDA.api('/api/Teams');
+    renderTeamTable();
+    populateTeamSelects();
+  } catch (err) {
+    MDA.toast('Không tải được danh sách đội bóng: ' + err.message, 'error');
+  }
+}
+
+function renderTeamTable() {
+  const body = document.getElementById('team-body');
+  body.innerHTML = teamsCache.length ? teamsCache.map(t => `
+    <tr>
+      <td>${t.name}</td>
+      <td class="mono">${t.shortName}</td>
+      <td class="text-muted text-sm">${t.homeStadiumName || '—'}</td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-sm btn-ghost" onclick="editTeam(${t.id})">Sửa</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTeam(${t.id})">Xóa</button>
+        </div>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="4" class="text-muted text-center">Chưa có đội bóng nào.</td></tr>`;
+}
+
+function populateTeamSelects() {
+  const opts = teamsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  document.getElementById('player-team').innerHTML = `<option value="">-- Chọn đội --</option>${opts}`;
+  document.getElementById('player-filter-team').innerHTML = `<option value="">Tất cả đội</option>${opts}`;
+}
+
+document.getElementById('team-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const dto = {
+    name: document.getElementById('team-name').value.trim(),
+    shortName: document.getElementById('team-shortname').value.trim(),
+    logoUrl: document.getElementById('team-logo').value.trim() || null,
+    homeStadiumId: document.getElementById('team-stadium').value ? Number(document.getElementById('team-stadium').value) : null,
+  };
+  try {
+    if (editTeamId) {
+      await MDA.api(`/api/Teams/${editTeamId}`, { method: 'PUT', body: JSON.stringify(dto) });
+      MDA.toast('Đã cập nhật đội bóng.', 'success');
+    } else {
+      await MDA.api('/api/Teams', { method: 'POST', body: JSON.stringify(dto) });
+      MDA.toast('Đã thêm đội bóng.', 'success');
+    }
+    resetTeamForm();
+    await loadTeams();
+    await loadPlayers();
+  } catch (err) {
+    MDA.toast(err.message, 'error');
+  }
+});
+
+function editTeam(id) {
+  const t = teamsCache.find(x => x.id === id);
+  if (!t) return;
+  editTeamId = id;
+  document.getElementById('team-name').value = t.name;
+  document.getElementById('team-shortname').value = t.shortName;
+  document.getElementById('team-logo').value = t.logoUrl || '';
+  document.getElementById('team-stadium').value = t.homeStadiumId || '';
+  document.getElementById('team-form-title').textContent = `Sửa đội: ${t.name}`;
+  document.getElementById('team-submit-btn').textContent = 'Lưu thay đổi';
+  document.getElementById('team-cancel-btn').style.display = '';
+  document.getElementById('team-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetTeamForm() {
+  editTeamId = null;
+  document.getElementById('team-form').reset();
+  document.getElementById('team-form-title').textContent = 'Thêm đội bóng';
+  document.getElementById('team-submit-btn').textContent = 'Thêm đội';
+  document.getElementById('team-cancel-btn').style.display = 'none';
+}
+
+async function deleteTeam(id) {
+  if (!confirm('Xóa đội bóng này? (không thể xóa nếu đội đang có cầu thủ hoặc trận đấu)')) return;
+  try {
+    await MDA.api(`/api/Teams/${id}`, { method: 'DELETE' });
+    MDA.toast('Đã xóa đội bóng.', 'success');
+    await loadTeams();
+  } catch (err) {
+    MDA.toast(err.message, 'error');
+  }
+}
+
+/* ============== CẦU THỦ ============== */
+
+async function loadPlayers() {
+  const body = document.getElementById('player-body');
+  body.innerHTML = `<tr><td colspan="6"><div class="skeleton" style="height:20px"></div></td></tr>`;
+  try {
+    const teamId = document.getElementById('player-filter-team').value;
+    const path = teamId ? `/api/Players?teamId=${teamId}` : '/api/Players';
+    const players = await MDA.api(path);
+    body.innerHTML = players.length ? players.map(p => `
+      <tr>
+        <td class="mono">${p.jerseyNumber}</td>
+        <td>${p.fullName}</td>
+        <td class="mono">${p.position}</td>
+        <td class="text-muted text-sm">${p.teamName}</td>
+        <td class="mono text-sm text-muted">${p.dateOfBirth ? new Date(p.dateOfBirth).toLocaleDateString('vi-VN') : '—'}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-sm btn-ghost" onclick='editPlayer(${JSON.stringify(p)})'>Sửa</button>
+            <button class="btn btn-sm btn-danger" onclick="deletePlayer(${p.id})">Xóa</button>
+          </div>
+        </td>
+      </tr>`).join('') : `<tr><td colspan="6" class="text-muted text-center">Chưa có cầu thủ nào.</td></tr>`;
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="6" class="text-muted text-center">${err.message}</td></tr>`;
+  }
+}
+
+document.getElementById('player-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const dob = document.getElementById('player-dob').value;
+  const dto = {
+    fullName: document.getElementById('player-name').value.trim(),
+    jerseyNumber: Number(document.getElementById('player-jersey').value),
+    position: document.getElementById('player-position').value,
+    dateOfBirth: dob || null,
+    photoUrl: document.getElementById('player-photo').value.trim() || null,
+    teamId: Number(document.getElementById('player-team').value),
+  };
+  try {
+    if (editPlayerId) {
+      await MDA.api(`/api/Players/${editPlayerId}`, { method: 'PUT', body: JSON.stringify(dto) });
+      MDA.toast('Đã cập nhật cầu thủ.', 'success');
+    } else {
+      await MDA.api('/api/Players', { method: 'POST', body: JSON.stringify(dto) });
+      MDA.toast('Đã thêm cầu thủ.', 'success');
+    }
+    resetPlayerForm();
+    await loadPlayers();
+  } catch (err) {
+    MDA.toast(err.message, 'error');
+  }
+});
+
+function editPlayer(p) {
+  editPlayerId = p.id;
+  document.getElementById('player-name').value = p.fullName;
+  document.getElementById('player-jersey').value = p.jerseyNumber;
+  document.getElementById('player-position').value = p.position;
+  document.getElementById('player-dob').value = p.dateOfBirth ? p.dateOfBirth.substring(0, 10) : '';
+  document.getElementById('player-photo').value = p.photoUrl || '';
+  document.getElementById('player-team').value = p.teamId;
+  document.getElementById('player-form-title').textContent = `Sửa cầu thủ: ${p.fullName}`;
+  document.getElementById('player-submit-btn').textContent = 'Lưu thay đổi';
+  document.getElementById('player-cancel-btn').style.display = '';
+  document.getElementById('player-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetPlayerForm() {
+  editPlayerId = null;
+  document.getElementById('player-form').reset();
+  document.getElementById('player-form-title').textContent = 'Thêm cầu thủ';
+  document.getElementById('player-submit-btn').textContent = 'Thêm cầu thủ';
+  document.getElementById('player-cancel-btn').style.display = 'none';
+}
+
+async function deletePlayer(id) {
+  if (!confirm('Xóa cầu thủ này? (không thể xóa nếu đang có trong đội hình/chỉ số trận đấu)')) return;
+  try {
+    await MDA.api(`/api/Players/${id}`, { method: 'DELETE' });
+    MDA.toast('Đã xóa cầu thủ.', 'success');
+    await loadPlayers();
+  } catch (err) {
+    MDA.toast(err.message, 'error');
+  }
+}
+
+/* ============== KHỐI GHẾ ============== */
+
+let seatBlocksCache = [];
+
+async function loadSeatBlocks() {
+  const body = document.getElementById('seatblock-body');
+  body.innerHTML = `<tr><td colspan="5"><div class="skeleton" style="height:20px"></div></td></tr>`;
+  try {
+    const stadiumId = document.getElementById('seatblock-filter-stadium').value;
+    const path = stadiumId ? `/api/SeatBlocks?stadiumId=${stadiumId}` : '/api/SeatBlocks';
+    seatBlocksCache = await MDA.api(path);
+    body.innerHTML = seatBlocksCache.length ? seatBlocksCache.map(sb => `
+      <tr>
+        <td>${sb.name}</td>
+        <td class="text-muted text-sm">${sb.stadiumName}</td>
+        <td class="mono">${MDA.money(sb.basePrice)}</td>
+        <td class="mono">${sb.seatCount}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-sm btn-ghost" onclick="openSeatManager(${sb.id})">Ghế</button>
+            <button class="btn btn-sm btn-ghost" onclick='editSeatBlock(${JSON.stringify(sb)})'>Sửa</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteSeatBlock(${sb.id})">Xóa</button>
+          </div>
+        </td>
+      </tr>`).join('') : `<tr><td colspan="5" class="text-muted text-center">Chưa có khối ghế nào.</td></tr>`;
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="5" class="text-muted text-center">${err.message}</td></tr>`;
+  }
+}
+
+document.getElementById('seatblock-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const dto = {
+    name: document.getElementById('seatblock-name').value.trim(),
+    basePrice: Number(document.getElementById('seatblock-price').value),
+    stadiumId: Number(document.getElementById('seatblock-stadium').value),
+  };
+  try {
+    if (editSeatBlockId) {
+      await MDA.api(`/api/SeatBlocks/${editSeatBlockId}`, { method: 'PUT', body: JSON.stringify(dto) });
+      MDA.toast('Đã cập nhật khối ghế.', 'success');
+    } else {
+      await MDA.api('/api/SeatBlocks', { method: 'POST', body: JSON.stringify(dto) });
+      MDA.toast('Đã thêm khối ghế.', 'success');
+    }
+    resetSeatBlockForm();
+    await loadSeatBlocks();
+  } catch (err) {
+    MDA.toast(err.message, 'error');
+  }
+});
+
+function editSeatBlock(sb) {
+  editSeatBlockId = sb.id;
+  document.getElementById('seatblock-name').value = sb.name;
+  document.getElementById('seatblock-price').value = sb.basePrice;
+  document.getElementById('seatblock-stadium').value = sb.stadiumId;
+  document.getElementById('seatblock-form-title').textContent = `Sửa khối ghế: ${sb.name}`;
+  document.getElementById('seatblock-submit-btn').textContent = 'Lưu thay đổi';
+  document.getElementById('seatblock-cancel-btn').style.display = '';
+  document.getElementById('seatblock-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetSeatBlockForm() {
+  editSeatBlockId = null;
+  document.getElementById('seatblock-form').reset();
+  document.getElementById('seatblock-form-title').textContent = 'Thêm khối ghế';
+  document.getElementById('seatblock-submit-btn').textContent = 'Thêm khối ghế';
+  document.getElementById('seatblock-cancel-btn').style.display = 'none';
+}
+
+async function deleteSeatBlock(id) {
+  if (!confirm('Xóa khối ghế này? (không thể xóa nếu đang có ghế hoặc giá vé liên quan)')) return;
+  try {
+    await MDA.api(`/api/SeatBlocks/${id}`, { method: 'DELETE' });
+    MDA.toast('Đã xóa khối ghế.', 'success');
+    if (activeSeatBlock === id) closeSeatManager();
+    await loadSeatBlocks();
+  } catch (err) {
+    MDA.toast(err.message, 'error');
+  }
+}
+
+/* ---- Ghế trong 1 khối ---- */
+
+async function openSeatManager(blockId) {
+  activeSeatBlock = blockId;
+  const sb = seatBlocksCache.find(x => x.id === blockId);
+  document.getElementById('seat-manager').style.display = 'block';
+  document.getElementById('seat-manager-title').textContent = sb ? `Quản lý ghế — ${sb.name} (${sb.stadiumName})` : 'Quản lý ghế';
+  document.getElementById('bulk-progress').textContent = '';
+  document.getElementById('seat-manager').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  await loadSeats();
+}
+
+function closeSeatManager() {
+  activeSeatBlock = null;
+  document.getElementById('seat-manager').style.display = 'none';
+}
+
+async function loadSeats() {
+  if (!activeSeatBlock) return;
+  const body = document.getElementById('seat-body');
+  body.innerHTML = `<tr><td colspan="3" class="text-muted text-center">Đang tải...</td></tr>`;
+  try {
+    const seats = await MDA.api(`/api/Seats?seatBlockId=${activeSeatBlock}`);
+    body.innerHTML = seats.length ? seats.map(s => `
+      <tr>
+        <td class="mono">${s.rowLabel}</td>
+        <td class="mono">${s.seatNumber}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-sm btn-danger" onclick="deleteSeat(${s.id})">Xóa</button>
+          </div>
+        </td>
+      </tr>`).join('') : `<tr><td colspan="3" class="text-muted text-center">Khối này chưa có ghế nào.</td></tr>`;
+  } catch (err) {
+    body.innerHTML = `<tr><td colspan="3" class="text-muted text-center">${err.message}</td></tr>`;
+  }
+}
+
+async function addSingleSeat() {
+  if (!activeSeatBlock) return;
+  const rowLabel = document.getElementById('seat-row').value.trim().toUpperCase();
+  const seatNumber = Number(document.getElementById('seat-number').value);
+  if (!rowLabel || !seatNumber) {
+    MDA.toast('Nhập đủ hàng ghế và số ghế.', 'error');
+    return;
+  }
+  try {
+    await MDA.api('/api/Seats', { method: 'POST', body: JSON.stringify({ rowLabel, seatNumber, seatBlockId: activeSeatBlock }) });
+    document.getElementById('seat-row').value = '';
+    document.getElementById('seat-number').value = '';
+    await loadSeats();
+    await loadSeatBlocks();
+    MDA.toast('Đã thêm ghế.', 'success');
+  } catch (err) {
+    MDA.toast(err.message, 'error');
+  }
+}
+
+async function deleteSeat(id) {
+  if (!confirm('Xóa ghế này?')) return;
+  try {
+    await MDA.api(`/api/Seats/${id}`, { method: 'DELETE' });
+    await loadSeats();
+    await loadSeatBlocks();
+  } catch (err) {
+    MDA.toast(err.message, 'error');
+  }
+}
+
+async function bulkGenerateSeats() {
+  if (!activeSeatBlock) return;
+  const rowFrom = document.getElementById('bulk-row-from').value.trim().toUpperCase();
+  const rowTo = document.getElementById('bulk-row-to').value.trim().toUpperCase();
+  const count = Number(document.getElementById('bulk-seat-count').value);
+
+  if (rowFrom.length !== 1 || rowTo.length !== 1 || !count) {
+    MDA.toast('Hàng phải là 1 ký tự (VD: A đến J) và nhập số ghế mỗi hàng.', 'error');
+    return;
+  }
+  const fromCode = rowFrom.charCodeAt(0);
+  const toCode = rowTo.charCodeAt(0);
+  if (toCode < fromCode) {
+    MDA.toast('"Đến hàng" phải sau hoặc bằng "Từ hàng".', 'error');
+    return;
+  }
+  const rowCount = toCode - fromCode + 1;
+  const total = rowCount * count;
+  if (total > 500) {
+    MDA.toast(`Tổng ${total} ghế vượt giới hạn 500 ghế/lần tạo nhanh. Hãy chia nhỏ khoảng hàng.`, 'error');
+    return;
+  }
+  if (!confirm(`Sẽ tạo ${total} ghế (hàng ${rowFrom}–${rowTo}, ${count} ghế/hàng). Tiếp tục?`)) return;
+
+  const progressEl = document.getElementById('bulk-progress');
+  let created = 0, skipped = 0, failed = 0;
+  for (let code = fromCode; code <= toCode; code++) {
+    const row = String.fromCharCode(code);
+    for (let n = 1; n <= count; n++) {
+      progressEl.textContent = `Đang tạo... hàng ${row}, ghế ${n}/${count} (đã tạo ${created}, trùng ${skipped}, lỗi ${failed})`;
+      try {
+        await MDA.api('/api/Seats', { method: 'POST', body: JSON.stringify({ rowLabel: row, seatNumber: n, seatBlockId: activeSeatBlock }) });
+        created++;
+      } catch (err) {
+        if (err.status === 409) skipped++; else failed++;
+      }
+    }
+  }
+  progressEl.textContent = `Hoàn tất: đã tạo ${created} ghế, bỏ qua ${skipped} ghế trùng, lỗi ${failed}.`;
+  await loadSeats();
+  await loadSeatBlocks();
+  MDA.toast(`Đã tạo ${created} ghế mới.`, 'success');
+}
+    </script>
+</body>
+</html>
