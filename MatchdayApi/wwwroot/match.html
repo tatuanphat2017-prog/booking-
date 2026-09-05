@@ -1,420 +1,421 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chi tiết trận đấu — Matchday</title>
-    <link rel="stylesheet" href="assets/css/style.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chi tiết trận đấu — Matchday</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 </head>
 <body>
 
-    <div id="site-header"></div>
+<div id="site-header"></div>
 
-    <main>
-        <div class="container">
-            <div id="match-head">
-                <div class="skeleton" style="height:120px"></div>
-            </div>
+<main>
+  <div class="container">
+    <div id="match-head">
+      <div class="skeleton" style="height:120px"></div>
+    </div>
 
-            <div id="content-area" class="mt-32"></div>
+    <div id="content-area" class="mt-32"></div>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+
+<script src="assets/js/app.js"></script>
+<script>
+MDA.renderHeader();
+MDA.renderFooter();
+
+const matchId = parseInt(MDA.qs('id'), 10);
+let match = null;
+let seats = [];
+let foodItems = [];
+let foodQty = {};       // foodItemId -> qty
+let connection = null;
+let bookingInFlight = false;
+
+if (!matchId) {
+  document.getElementById('match-head').innerHTML = `<div class="empty-state"><div class="icon">${MDA.icon('warning')}</div><p>Thiếu mã trận đấu.</p></div>`;
+} else {
+  init();
+}
+
+async function init() {
+  try {
+    match = await MDA.api(`/api/Dashboard/matches/${matchId}`);
+  } catch (err) {
+    document.getElementById('match-head').innerHTML = `<div class="empty-state"><div class="icon">${MDA.icon('warning')}</div><p>${err.message}</p></div>`;
+    return;
+  }
+
+  renderHead();
+
+  if (match.status === 'Finished') {
+    renderFinished();
+  } else {
+    await renderBookingFlow();
+  }
+}
+
+function crestLg(name, logoUrl) {
+  const t = MDA.crestTheme(name);
+  const img = logoUrl ? `<img src="${logoUrl}" alt="" onerror="this.remove()" />` : '';
+  return `<div class="team-crest" style="width:56px;height:60px;"><div class="crest-fill" style="font-size:16px;background:${t.bg};color:${t.fg};">${MDA.initials(name)}${img}</div></div>`;
+}
+
+function renderHead() {
+  document.getElementById('match-head').innerHTML = `
+    <div class="card fade-in" style="padding:28px 30px;">
+      ${MDA.statusBadge(match.status)}
+      <div class="flex-between mt-16" style="flex-wrap:wrap; gap:20px;">
+        <div class="flex gap-16" style="align-items:center;">
+          ${crestLg(match.homeTeamName, match.homeTeamLogoUrl)}
+          <div>
+            <h1 style="font-size:22px;">${match.homeTeamName}</h1>
+            <span class="text-faint text-sm">Chủ nhà</span>
+          </div>
         </div>
-    </main>
+        <div class="text-center">
+          ${match.result
+            ? `<div class="score-line">${match.result.homeScore}<span class="dash">–</span>${match.result.awayScore}</div>`
+            : `<div class="mono text-gold" style="font-size:22px;">${MDA.timeOnly(match.matchDateTime)}</div>`}
+          <div class="text-faint text-sm">${MDA.formatDateTime(match.matchDateTime)}</div>
+        </div>
+        <div class="flex gap-16" style="align-items:center; flex-direction:row-reverse; text-align:right;">
+          ${crestLg(match.awayTeamName, match.awayTeamLogoUrl)}
+          <div>
+            <h1 style="font-size:22px;">${match.awayTeamName}</h1>
+            <span class="text-faint text-sm">Đội khách</span>
+          </div>
+        </div>
+      </div>
+      <hr class="divider" />
+      <div class="meta-row" style="margin-bottom:0;">
+        <span>${MDA.icon('pin')} ${match.stadiumName} — ${match.stadiumAddress}, ${match.stadiumCity}</span>
+      </div>
+    </div>`;
+}
 
-    <div id="site-footer"></div>
+/* ================= TRẬN ĐÃ KẾT THÚC: kết quả + đội hình + chỉ số ================= */
 
-    <script src="assets/js/app.js"></script>
-    <script>
-        MDA.renderHeader();
-        MDA.renderFooter();
+function renderFinished() {
+  const r = match.result;
+  const area = document.getElementById('content-area');
 
-        const matchId = parseInt(MDA.qs('id'), 10);
-        let match = null;
-        let seats = [];
-        let foodItems = [];
-        let foodQty = {};       // foodItemId -> qty
-        let connection = null;
-        let bookingInFlight = false;
+  let statsHtml = '';
+  if (r) {
+    statsHtml = `
+      <div class="card fade-in" style="padding:26px 28px;">
+        <div class="section-title" style="margin-top:0;">Thống kê trận đấu</div>
+        ${statBar('Kiểm soát bóng', r.possessionHome, r.possessionAway, '%')}
+        ${statBar('Dứt điểm', r.shotsHome, r.shotsAway)}
+        ${statBar('Phạt góc', r.cornersHome, r.cornersAway)}
+        ${statBar('Thẻ vàng', r.yellowCardsHome, r.yellowCardsAway)}
+        ${statBar('Thẻ đỏ', r.redCardsHome, r.redCardsAway)}
+      </div>`;
+  }
 
-        if (!matchId) {
-            document.getElementById('match-head').innerHTML = `<div class="empty-state"><div class="icon">${MDA.icon('warning')}</div><p>Thiếu mã trận đấu.</p></div>`;
-        } else {
-            init();
-        }
+  const lineupHtml = `
+    <div class="grid-cards mt-24" style="grid-template-columns: 1fr 1fr;">
+      ${lineupCard(match.homeLineup, match.homeTeamName)}
+      ${lineupCard(match.awayLineup, match.awayTeamName)}
+    </div>`;
 
-        async function init() {
-            try {
-                match = await MDA.api(`/api/Dashboard/matches/${matchId}`);
-            } catch (err) {
-                document.getElementById('match-head').innerHTML = `<div class="empty-state"><div class="icon">${MDA.icon('warning')}</div><p>${err.message}</p></div>`;
-                return;
-            }
-
-            renderHead();
-
-            if (match.status === 'Finished') {
-                renderFinished();
-            } else {
-                await renderBookingFlow();
-            }
-        }
-
-        function crestLg(name) {
-            const t = MDA.crestTheme(name);
-            return `<div class="team-crest" style="width:56px;height:60px;"><div class="crest-fill" style="font-size:16px;background:${t.bg};color:${t.fg};">${MDA.initials(name)}</div></div>`;
-        }
-
-        function renderHead() {
-            document.getElementById('match-head').innerHTML = `
-            <div class="card fade-in" style="padding:28px 30px;">
-              ${MDA.statusBadge(match.status)}
-              <div class="flex-between mt-16" style="flex-wrap:wrap; gap:20px;">
-                <div class="flex gap-16" style="align-items:center;">
-                  ${crestLg(match.homeTeamName)}
-                  <div>
-                    <h1 style="font-size:22px;">${match.homeTeamName}</h1>
-                    <span class="text-faint text-sm">Chủ nhà</span>
-                  </div>
-                </div>
-                <div class="text-center">
-                  ${match.result
-                    ? `<div class="score-line">${match.result.homeScore}<span class="dash">–</span>${match.result.awayScore}</div>`
-                    : `<div class="mono text-gold" style="font-size:22px;">${MDA.timeOnly(match.matchDateTime)}</div>`}
-                  <div class="text-faint text-sm">${MDA.formatDateTime(match.matchDateTime)}</div>
-                </div>
-                <div class="flex gap-16" style="align-items:center; flex-direction:row-reverse; text-align:right;">
-                  ${crestLg(match.awayTeamName)}
-                  <div>
-                    <h1 style="font-size:22px;">${match.awayTeamName}</h1>
-                    <span class="text-faint text-sm">Đội khách</span>
-                  </div>
-                </div>
-              </div>
-              <hr class="divider" />
-              <div class="meta-row" style="margin-bottom:0;">
-                <span>${MDA.icon('pin')} ${match.stadiumName} — ${match.stadiumAddress}, ${match.stadiumCity}</span>
-              </div>
-            </div>`;
-        }
-
-        /* ================= TRẬN ĐÃ KẾT THÚC: kết quả + đội hình + chỉ số ================= */
-
-        function renderFinished() {
-            const r = match.result;
-            const area = document.getElementById('content-area');
-
-            let statsHtml = '';
-            if (r) {
-                statsHtml = `
-              <div class="card fade-in" style="padding:26px 28px;">
-                <div class="section-title" style="margin-top:0;">Thống kê trận đấu</div>
-                ${statBar('Kiểm soát bóng', r.possessionHome, r.possessionAway, '%')}
-                ${statBar('Dứt điểm', r.shotsHome, r.shotsAway)}
-                ${statBar('Phạt góc', r.cornersHome, r.cornersAway)}
-                ${statBar('Thẻ vàng', r.yellowCardsHome, r.yellowCardsAway)}
-                ${statBar('Thẻ đỏ', r.redCardsHome, r.redCardsAway)}
-              </div>`;
-            }
-
-            const lineupHtml = `
-            <div class="grid-cards mt-24" style="grid-template-columns: 1fr 1fr;">
-              ${lineupCard(match.homeLineup, match.homeTeamName)}
-              ${lineupCard(match.awayLineup, match.awayTeamName)}
-            </div>`;
-
-            const topStats = (match.playerStats || []).filter(p => p.goals > 0 || p.assists > 0 || p.rating >= 7.5).slice(0, 8);
-            const statsTable = topStats.length ? `
-            <div class="card mt-24 fade-in" style="padding:26px 28px;">
-              <div class="section-title" style="margin-top:0;">Cầu thủ nổi bật</div>
-              ${topStats.map(p => `
-                <div class="flex-between" style="padding:10px 0; border-bottom:1px solid var(--line-soft);">
-                  <div class="flex gap-12" style="align-items:center;">
-                    <span class="mono text-gold" style="width:24px;">${p.jerseyNumber}</span>
-                    <div>
-                      <div style="font-weight:600; font-size:14px;">${p.playerName}</div>
-                      <div class="text-faint text-sm">${p.teamName}</div>
-                    </div>
-                  </div>
-                  <div class="flex gap-16 text-sm">
-                    ${p.goals > 0 ? `<span>${MDA.icon('ball')} ${p.goals}</span>` : ''}
-                    ${p.assists > 0 ? `<span>${MDA.icon('assist')} ${p.assists}</span>` : ''}
-                    <span class="mono text-gold">${Number(p.rating).toFixed(1)}</span>
-                  </div>
-                </div>`).join('')}
-            </div>` : '';
-
-            area.innerHTML = statsHtml + lineupHtml + statsTable;
-        }
-
-        function statBar(label, home, away) {
-            const total = (home || 0) + (away || 0) || 1;
-            const pctHome = (home / total) * 100;
-            return `
-            <div class="stat-row">
-              <div class="labels"><b>${home ?? 0}</b><span>${label}</span><b>${away ?? 0}</b></div>
-              <div class="stat-track">
-                <div class="fill-home" style="width:${pctHome}%"></div>
-                <div class="fill-away" style="width:${100 - pctHome}%"></div>
-              </div>
-            </div>`;
-        }
-
-        function lineupCard(lineup, teamName) {
-            if (!lineup) {
-                return `<div class="card" style="padding:24px;"><h3 style="font-size:15px; margin-bottom:12px;">${teamName}</h3><p class="text-muted text-sm">Chưa có dữ liệu đội hình.</p></div>`;
-            }
-            const players = lineup.players.filter(p => p.isStarting);
-            const dots = players.map(p => `
-            <div class="pitch-player" style="left:${p.positionY}%; top:${100 - p.positionX}%;">
-              <div class="num">${p.jerseyNumber}</div>
-              <div class="pname">${p.playerName.split(' ').slice(-1)[0]}</div>
-            </div>`).join('');
-
-            return `
-            <div class="card fade-in" style="padding:20px;">
-              <div class="flex-between mb-16">
-                <h3 style="font-size:15px;">${teamName}</h3>
-                <span class="mono text-gold text-sm">${lineup.formation}</span>
-              </div>
-              <div class="pitch">${dots}</div>
-            </div>`;
-        }
-
-        /* ================= TRẬN CHƯA ĐÁ: chọn ghế + đồ ăn + đặt vé ================= */
-
-        function buildLineupPreview() {
-            if (!match.homeLineup && !match.awayLineup) return '';
-            const label = match.status === 'Live' ? 'Đội hình ra sân' : 'Đội hình dự kiến';
-            return `
-            <div class="section-title" style="margin-top:0;">${label}</div>
-            <div class="grid-cards mb-24" style="grid-template-columns: 1fr 1fr;">
-              ${lineupCard(match.homeLineup, match.homeTeamName)}
-              ${lineupCard(match.awayLineup, match.awayTeamName)}
-            </div>`;
-        }
-
-        async function renderBookingFlow() {
-            const area = document.getElementById('content-area');
-            const lineupHtml = buildLineupPreview();
-
-            if (!MDA.isLoggedIn()) {
-                area.innerHTML = lineupHtml + `
-              <div class="empty-state card" style="padding:56px 20px;">
-                <div class="icon">${MDA.icon('lock')}</div>
-                <p>Đăng nhập để xem sơ đồ ghế và đặt vé cho trận đấu này.</p>
-                <a class="btn btn-gold mt-16" href="login.html?next=${encodeURIComponent(location.pathname + location.search)}">Đăng nhập ngay</a>
-              </div>`;
-                return;
-            }
-
-            area.innerHTML = lineupHtml + `
-            <div class="section-title" ${lineupHtml ? '' : 'style="margin-top:0;"'}>Chọn ghế</div>
-            <div class="seat-legend">
-              <span><i class="legend-swatch" style="background:var(--bg-elevated-2); border:1px solid var(--line);"></i>Còn trống</span>
-              <span><i class="legend-swatch" style="background:var(--gold);"></i>Bạn đang giữ</span>
-              <span><i class="legend-swatch" style="background:var(--bg-elevated-2); opacity:.5;"></i>Người khác giữ</span>
-              <span><i class="legend-swatch" style="background:transparent; border:1px solid var(--line-soft);"></i>Đã bán</span>
+  const topStats = (match.playerStats || []).filter(p => p.goals > 0 || p.assists > 0 || p.rating >= 7.5).slice(0, 8);
+  const statsTable = topStats.length ? `
+    <div class="card mt-24 fade-in" style="padding:26px 28px;">
+      <div class="section-title" style="margin-top:0;">Cầu thủ nổi bật</div>
+      ${topStats.map(p => `
+        <div class="flex-between" style="padding:10px 0; border-bottom:1px solid var(--line-soft);">
+          <div class="flex gap-12" style="align-items:center;">
+            <span class="mono text-gold" style="width:24px;">${p.jerseyNumber}</span>
+            <div>
+              <div style="font-weight:600; font-size:14px;">${p.playerName}</div>
+              <div class="text-faint text-sm">${p.teamName}</div>
             </div>
-            <div id="seat-map"><div class="skeleton" style="height:200px"></div></div>
+          </div>
+          <div class="flex gap-16 text-sm">
+            ${p.goals > 0 ? `<span>${MDA.icon('ball')} ${p.goals}</span>` : ''}
+            ${p.assists > 0 ? `<span>${MDA.icon('assist')} ${p.assists}</span>` : ''}
+            <span class="mono text-gold">${Number(p.rating).toFixed(1)}</span>
+          </div>
+        </div>`).join('')}
+    </div>` : '';
 
-            <div class="section-title">Đồ ăn &amp; thức uống (không bắt buộc)</div>
-            <div id="food-list" class="card" style="padding:8px 24px;"><div class="skeleton" style="height:80px"></div></div>
+  area.innerHTML = statsHtml + lineupHtml + statsTable;
+}
 
-            <div class="summary-bar" id="summary-bar">
-              <div>
-                <div class="total-label" id="summary-detail">Chưa chọn ghế nào.</div>
-                <div class="total-amount" id="summary-total">0đ</div>
-              </div>
-              <button class="btn btn-gold" id="btn-checkout" disabled>Đặt vé &amp; Thanh toán</button>
-            </div>`;
+function statBar(label, home, away) {
+  const total = (home || 0) + (away || 0) || 1;
+  const pctHome = (home / total) * 100;
+  return `
+    <div class="stat-row">
+      <div class="labels"><b>${home ?? 0}</b><span>${label}</span><b>${away ?? 0}</b></div>
+      <div class="stat-track">
+        <div class="fill-home" style="width:${pctHome}%"></div>
+        <div class="fill-away" style="width:${100 - pctHome}%"></div>
+      </div>
+    </div>`;
+}
 
-            document.getElementById('btn-checkout').addEventListener('click', checkout);
+function lineupCard(lineup, teamName) {
+  if (!lineup) {
+    return `<div class="card" style="padding:24px;"><h3 style="font-size:15px; margin-bottom:12px;">${teamName}</h3><p class="text-muted text-sm">Chưa có dữ liệu đội hình.</p></div>`;
+  }
+  const players = lineup.players.filter(p => p.isStarting);
+  const dots = players.map(p => `
+    <div class="pitch-player" style="left:${p.positionY}%; top:${100 - p.positionX}%;">
+      <div class="num">${p.jerseyNumber}</div>
+      <div class="pname">${p.playerName.split(' ').slice(-1)[0]}</div>
+    </div>`).join('');
 
-            await Promise.all([loadFoodItems(), connectAndLoadSeats()]);
-        }
+  return `
+    <div class="card fade-in" style="padding:20px;">
+      <div class="flex-between mb-16">
+        <h3 style="font-size:15px;">${teamName}</h3>
+        <span class="mono text-gold text-sm">${lineup.formation}</span>
+      </div>
+      <div class="pitch">${dots}</div>
+    </div>`;
+}
 
-        async function loadFoodItems() {
-            try {
-                foodItems = await MDA.api('/api/FoodItems?onlyAvailable=true');
-                document.getElementById('food-list').innerHTML = foodItems.length
-                    ? foodItems.map(foodRow).join('')
-                    : `<p class="text-muted text-sm" style="padding:16px 0;">Trận này chưa có món ăn/thức uống nào được bán kèm.</p>`;
-            } catch (err) {
-                MDA.toast('Không tải được menu đồ ăn: ' + err.message, 'error');
-            }
-        }
+/* ================= TRẬN CHƯA ĐÁ: chọn ghế + đồ ăn + đặt vé ================= */
 
-        function foodRow(f) {
-            foodQty[f.id] = foodQty[f.id] || 0;
-            return `
-            <div class="food-item">
-              <div>
-                <div class="name">${f.name}</div>
-                <div class="price">${MDA.money(f.price)}</div>
-              </div>
-              <div class="qty-control">
-                <button onclick="changeQty(${f.id}, -1)">−</button>
-                <span class="qty-num" id="qty-${f.id}">${foodQty[f.id]}</span>
-                <button onclick="changeQty(${f.id}, 1)">+</button>
-              </div>
-            </div>`;
-        }
+function buildLineupPreview() {
+  if (!match.homeLineup && !match.awayLineup) return '';
+  const label = match.status === 'Live' ? 'Đội hình ra sân' : 'Đội hình dự kiến';
+  return `
+    <div class="section-title" style="margin-top:0;">${label}</div>
+    <div class="grid-cards mb-24" style="grid-template-columns: 1fr 1fr;">
+      ${lineupCard(match.homeLineup, match.homeTeamName)}
+      ${lineupCard(match.awayLineup, match.awayTeamName)}
+    </div>`;
+}
 
-        function changeQty(id, delta) {
-            foodQty[id] = Math.max(0, (foodQty[id] || 0) + delta);
-            document.getElementById(`qty-${id}`).textContent = foodQty[id];
-            updateSummary();
-        }
+async function renderBookingFlow() {
+  const area = document.getElementById('content-area');
+  const lineupHtml = buildLineupPreview();
 
-        async function connectAndLoadSeats() {
-            const token = MDA.getToken();
-            connection = new signalR.HubConnectionBuilder()
-                .withUrl(`${MDA.apiBase()}/hubs/seat-selection?access_token=${encodeURIComponent(token)}`)
-                .withAutomaticReconnect()
-                .build();
+  if (!MDA.isLoggedIn()) {
+    area.innerHTML = lineupHtml + `
+      <div class="empty-state card" style="padding:56px 20px;">
+        <div class="icon">${MDA.icon('lock')}</div>
+        <p>Đăng nhập để xem sơ đồ ghế và đặt vé cho trận đấu này.</p>
+        <a class="btn btn-gold mt-16" href="login.html?next=${encodeURIComponent(location.pathname + location.search)}">Đăng nhập ngay</a>
+      </div>`;
+    return;
+  }
 
-            connection.on('SeatHeld', (seatId) => updateSeatStatus(seatId, 'Held', false));
-            connection.on('SeatReleased', (seatId) => updateSeatStatus(seatId, 'Available', false));
-            connection.on('SeatBooked', (seatId) => updateSeatStatus(seatId, 'Booked', false));
-            connection.on('HoldConfirmed', (seatId) => updateSeatStatus(seatId, 'Held', true));
-            connection.on('HoldRejected', (seatId, reason) => MDA.toast(`Ghế #${seatId}: ${reason}`, 'error'));
+  area.innerHTML = lineupHtml + `
+    <div class="section-title" ${lineupHtml ? '' : 'style="margin-top:0;"'}>Chọn ghế</div>
+    <div class="seat-legend">
+      <span><i class="legend-swatch" style="background:var(--bg-elevated-2); border:1px solid var(--line);"></i>Còn trống</span>
+      <span><i class="legend-swatch" style="background:var(--gold);"></i>Bạn đang giữ</span>
+      <span><i class="legend-swatch" style="background:var(--bg-elevated-2); opacity:.5;"></i>Người khác giữ</span>
+      <span><i class="legend-swatch" style="background:transparent; border:1px solid var(--line-soft);"></i>Đã bán</span>
+    </div>
+    <div id="seat-map"><div class="skeleton" style="height:200px"></div></div>
 
-            try {
-                await connection.start();
-                await connection.invoke('JoinMatch', matchId);
-                await loadSeatMap();
-            } catch (err) {
-                MDA.toast('Không kết nối được kênh chọn ghế real-time: ' + err.message, 'error');
-            }
-        }
+    <div class="section-title">Đồ ăn &amp; thức uống (không bắt buộc)</div>
+    <div id="food-list" class="card" style="padding:8px 24px;"><div class="skeleton" style="height:80px"></div></div>
 
-        async function loadSeatMap() {
-            try {
-                seats = await MDA.api(`/api/Matches/${matchId}/seat-map`);
-                renderSeatMap();
-            } catch (err) {
-                document.getElementById('seat-map').innerHTML = `<p class="text-muted text-sm">${err.message}</p>`;
-            }
-        }
+    <div class="summary-bar" id="summary-bar">
+      <div>
+        <div class="total-label" id="summary-detail">Chưa chọn ghế nào.</div>
+        <div class="total-amount" id="summary-total">0đ</div>
+      </div>
+      <button class="btn btn-gold" id="btn-checkout" disabled>Đặt vé &amp; Thanh toán</button>
+    </div>`;
 
-        function renderSeatMap() {
-            const container = document.getElementById('seat-map');
-            if (!seats.length) { container.innerHTML = `<p class="text-muted text-sm">Sân này chưa được thiết lập ghế.</p>`; return; }
+  document.getElementById('btn-checkout').addEventListener('click', checkout);
 
-            const blocks = {};
-            seats.forEach(s => { (blocks[s.seatBlockName] ??= []).push(s); });
+  await Promise.all([loadFoodItems(), connectAndLoadSeats()]);
+}
 
-            container.innerHTML = Object.keys(blocks).map(blockName => {
-                const list = blocks[blockName];
-                const price = list.find(s => s.price != null)?.price;
-                const rows = {};
-                list.forEach(s => { (rows[s.rowLabel] ??= []).push(s); });
+async function loadFoodItems() {
+  try {
+    foodItems = await MDA.api('/api/FoodItems?onlyAvailable=true');
+    document.getElementById('food-list').innerHTML = foodItems.length
+      ? foodItems.map(foodRow).join('')
+      : `<p class="text-muted text-sm" style="padding:16px 0;">Trận này chưa có món ăn/thức uống nào được bán kèm.</p>`;
+  } catch (err) {
+    MDA.toast('Không tải được menu đồ ăn: ' + err.message, 'error');
+  }
+}
 
-                return `
-              <div class="seat-block-title">
-                <span>Khối ${blockName}</span>
-                <span class="mono text-gold">${price != null ? MDA.money(price) : 'Chưa có giá'}</span>
-              </div>
-              ${Object.keys(rows).map(rowLabel => `
-                <div class="seat-row-grid">
-                  <span class="row-label">${rowLabel}</span>
-                  ${rows[rowLabel].map(seatBtn).join('')}
-                </div>`).join('')}`;
-            }).join('');
-        }
+function foodRow(f) {
+  foodQty[f.id] = foodQty[f.id] || 0;
+  return `
+    <div class="food-item">
+      <div>
+        <div class="name">${f.name}</div>
+        <div class="price">${MDA.money(f.price)}</div>
+      </div>
+      <div class="qty-control">
+        <button onclick="changeQty(${f.id}, -1)">−</button>
+        <span class="qty-num" id="qty-${f.id}">${foodQty[f.id]}</span>
+        <button onclick="changeQty(${f.id}, 1)">+</button>
+      </div>
+    </div>`;
+}
 
-        function seatBtn(s) {
-            const cls = s.status === 'Booked' ? 'booked' : s.status === 'Held' ? (s.isHeldByMe ? 'held-by-me' : 'held-other') : 'available';
-            const disabled = s.status === 'Booked' || (s.status === 'Held' && !s.isHeldByMe);
-            return `<button class="seat ${cls}" id="seat-${s.seatId}" ${disabled ? 'disabled' : ''} onclick="onSeatClick(${s.seatId})">${s.rowLabel}${s.seatNumber}</button>`;
-        }
+function changeQty(id, delta) {
+  foodQty[id] = Math.max(0, (foodQty[id] || 0) + delta);
+  document.getElementById(`qty-${id}`).textContent = foodQty[id];
+  updateSummary();
+}
 
-        function onSeatClick(seatId) {
-            const seat = seats.find(s => s.seatId === seatId);
-            if (!seat || !connection) return;
-            if (seat.status === 'Booked') return;
-            if (seat.status === 'Held' && !seat.isHeldByMe) return;
+async function connectAndLoadSeats() {
+  const token = MDA.getToken();
+  connection = new signalR.HubConnectionBuilder()
+    .withUrl(`${MDA.apiBase()}/hubs/seat-selection?access_token=${encodeURIComponent(token)}`)
+    .withAutomaticReconnect()
+    .build();
 
-            if (seat.status === 'Held' && seat.isHeldByMe) {
-                connection.invoke('ReleaseSeat', matchId, seatId);
-            } else {
-                connection.invoke('HoldSeat', matchId, seatId);
-            }
-        }
+  connection.on('SeatHeld', (seatId) => updateSeatStatus(seatId, 'Held', false));
+  connection.on('SeatReleased', (seatId) => updateSeatStatus(seatId, 'Available', false));
+  connection.on('SeatBooked', (seatId) => updateSeatStatus(seatId, 'Booked', false));
+  connection.on('HoldConfirmed', (seatId) => updateSeatStatus(seatId, 'Held', true));
+  connection.on('HoldRejected', (seatId, reason) => MDA.toast(`Ghế #${seatId}: ${reason}`, 'error'));
 
-        function updateSeatStatus(seatId, status, isHeldByMe) {
-            const seat = seats.find(s => s.seatId === seatId);
-            if (!seat) return;
-            seat.status = status;
-            seat.isHeldByMe = status === 'Held' ? isHeldByMe : false;
+  try {
+    await connection.start();
+    await connection.invoke('JoinMatch', matchId);
+    await loadSeatMap();
+  } catch (err) {
+    MDA.toast('Không kết nối được kênh chọn ghế real-time: ' + err.message, 'error');
+  }
+}
 
-            const btn = document.getElementById(`seat-${seatId}`);
-            if (btn) {
-                const cls = status === 'Booked' ? 'booked' : status === 'Held' ? (seat.isHeldByMe ? 'held-by-me' : 'held-other') : 'available';
-                btn.className = 'seat ' + cls;
-                btn.disabled = status === 'Booked' || (status === 'Held' && !seat.isHeldByMe);
-            }
-            updateSummary();
-        }
+async function loadSeatMap() {
+  try {
+    seats = await MDA.api(`/api/Matches/${matchId}/seat-map`);
+    renderSeatMap();
+  } catch (err) {
+    document.getElementById('seat-map').innerHTML = `<p class="text-muted text-sm">${err.message}</p>`;
+  }
+}
 
-        function mySeats() {
-            return seats.filter(s => s.status === 'Held' && s.isHeldByMe);
-        }
+function renderSeatMap() {
+  const container = document.getElementById('seat-map');
+  if (!seats.length) { container.innerHTML = `<p class="text-muted text-sm">Sân này chưa được thiết lập ghế.</p>`; return; }
 
-        function updateSummary() {
-            const mine = mySeats();
-            const seatsTotal = mine.reduce((sum, s) => sum + (s.price || 0), 0);
-            const foodTotal = Object.entries(foodQty).reduce((sum, [id, qty]) => {
-                const item = foodItems.find(f => f.id == id);
-                return sum + (item ? item.price * qty : 0);
-            }, 0);
-            const total = seatsTotal + foodTotal;
+  const blocks = {};
+  seats.forEach(s => { (blocks[s.seatBlockName] ??= []).push(s); });
 
-            const detail = document.getElementById('summary-detail');
-            const totalEl = document.getElementById('summary-total');
-            const btn = document.getElementById('btn-checkout');
-            if (!detail) return;
+  container.innerHTML = Object.keys(blocks).map(blockName => {
+    const list = blocks[blockName];
+    const price = list.find(s => s.price != null)?.price;
+    const rows = {};
+    list.forEach(s => { (rows[s.rowLabel] ??= []).push(s); });
 
-            detail.textContent = mine.length
-                ? `${mine.length} ghế: ${mine.map(s => s.rowLabel + s.seatNumber).join(', ')}${foodTotal > 0 ? ' + đồ ăn' : ''}`
-                : 'Chưa chọn ghế nào.';
-            totalEl.textContent = MDA.money(total);
-            btn.disabled = mine.length === 0 || bookingInFlight;
-        }
+    return `
+      <div class="seat-block-title">
+        <span>Khối ${blockName}</span>
+        <span class="mono text-gold">${price != null ? MDA.money(price) : 'Chưa có giá'}</span>
+      </div>
+      ${Object.keys(rows).map(rowLabel => `
+        <div class="seat-row-grid">
+          <span class="row-label">${rowLabel}</span>
+          ${rows[rowLabel].map(seatBtn).join('')}
+        </div>`).join('')}`;
+  }).join('');
+}
 
-        async function checkout() {
-            const mine = mySeats();
-            if (mine.length === 0) { MDA.toast('Bạn chưa chọn ghế nào.', 'error'); return; }
+function seatBtn(s) {
+  const cls = s.status === 'Booked' ? 'booked' : s.status === 'Held' ? (s.isHeldByMe ? 'held-by-me' : 'held-other') : 'available';
+  const disabled = s.status === 'Booked' || (s.status === 'Held' && !s.isHeldByMe);
+  return `<button class="seat ${cls}" id="seat-${s.seatId}" ${disabled ? 'disabled' : ''} onclick="onSeatClick(${s.seatId})">${s.rowLabel}${s.seatNumber}</button>`;
+}
 
-            bookingInFlight = true;
-            const btn = document.getElementById('btn-checkout');
-            btn.disabled = true; btn.textContent = 'Đang tạo đơn...';
+function onSeatClick(seatId) {
+  const seat = seats.find(s => s.seatId === seatId);
+  if (!seat || !connection) return;
+  if (seat.status === 'Booked') return;
+  if (seat.status === 'Held' && !seat.isHeldByMe) return;
 
-            try {
-                const booking = await MDA.api('/api/Bookings', {
-                    method: 'POST',
-                    body: JSON.stringify({ matchId, seatIds: mine.map(s => s.seatId) })
-                });
+  if (seat.status === 'Held' && seat.isHeldByMe) {
+    connection.invoke('ReleaseSeat', matchId, seatId);
+  } else {
+    connection.invoke('HoldSeat', matchId, seatId);
+  }
+}
 
-                const items = Object.entries(foodQty).filter(([, q]) => q > 0).map(([foodItemId, quantity]) => ({ foodItemId: Number(foodItemId), quantity }));
-                if (items.length) {
-                    btn.textContent = 'Đang thêm đồ ăn...';
-                    await MDA.api(`/api/Bookings/${booking.id}/food-items`, {
-                        method: 'PUT',
-                        body: JSON.stringify({ items })
-                    });
-                }
+function updateSeatStatus(seatId, status, isHeldByMe) {
+  const seat = seats.find(s => s.seatId === seatId);
+  if (!seat) return;
+  seat.status = status;
+  seat.isHeldByMe = status === 'Held' ? isHeldByMe : false;
 
-                btn.textContent = 'Đang chuyển tới cổng thanh toán...';
-                const pay = await MDA.api(`/api/Payments/vnpay/create/${booking.id}`, { method: 'POST' });
-                window.location.href = pay.paymentUrl;
-            } catch (err) {
-                MDA.toast('Đặt vé thất bại: ' + err.message, 'error');
-                bookingInFlight = false;
-                btn.textContent = 'Đặt vé & Thanh toán';
-                updateSummary();
-            }
-        }
-    </script>
+  const btn = document.getElementById(`seat-${seatId}`);
+  if (btn) {
+    const cls = status === 'Booked' ? 'booked' : status === 'Held' ? (seat.isHeldByMe ? 'held-by-me' : 'held-other') : 'available';
+    btn.className = 'seat ' + cls;
+    btn.disabled = status === 'Booked' || (status === 'Held' && !seat.isHeldByMe);
+  }
+  updateSummary();
+}
+
+function mySeats() {
+  return seats.filter(s => s.status === 'Held' && s.isHeldByMe);
+}
+
+function updateSummary() {
+  const mine = mySeats();
+  const seatsTotal = mine.reduce((sum, s) => sum + (s.price || 0), 0);
+  const foodTotal = Object.entries(foodQty).reduce((sum, [id, qty]) => {
+    const item = foodItems.find(f => f.id == id);
+    return sum + (item ? item.price * qty : 0);
+  }, 0);
+  const total = seatsTotal + foodTotal;
+
+  const detail = document.getElementById('summary-detail');
+  const totalEl = document.getElementById('summary-total');
+  const btn = document.getElementById('btn-checkout');
+  if (!detail) return;
+
+  detail.textContent = mine.length
+    ? `${mine.length} ghế: ${mine.map(s => s.rowLabel + s.seatNumber).join(', ')}${foodTotal > 0 ? ' + đồ ăn' : ''}`
+    : 'Chưa chọn ghế nào.';
+  totalEl.textContent = MDA.money(total);
+  btn.disabled = mine.length === 0 || bookingInFlight;
+}
+
+async function checkout() {
+  const mine = mySeats();
+  if (mine.length === 0) { MDA.toast('Bạn chưa chọn ghế nào.', 'error'); return; }
+
+  bookingInFlight = true;
+  const btn = document.getElementById('btn-checkout');
+  btn.disabled = true; btn.textContent = 'Đang tạo đơn...';
+
+  try {
+    const booking = await MDA.api('/api/Bookings', {
+      method: 'POST',
+      body: JSON.stringify({ matchId, seatIds: mine.map(s => s.seatId) })
+    });
+
+    const items = Object.entries(foodQty).filter(([, q]) => q > 0).map(([foodItemId, quantity]) => ({ foodItemId: Number(foodItemId), quantity }));
+    if (items.length) {
+      btn.textContent = 'Đang thêm đồ ăn...';
+      await MDA.api(`/api/Bookings/${booking.id}/food-items`, {
+        method: 'PUT',
+        body: JSON.stringify({ items })
+      });
+    }
+
+    btn.textContent = 'Đang chuyển tới cổng thanh toán...';
+    const pay = await MDA.api(`/api/Payments/vnpay/create/${booking.id}`, { method: 'POST' });
+    window.location.href = pay.paymentUrl;
+  } catch (err) {
+    MDA.toast('Đặt vé thất bại: ' + err.message, 'error');
+    bookingInFlight = false;
+    btn.textContent = 'Đặt vé & Thanh toán';
+    updateSummary();
+  }
+}
+</script>
 </body>
 </html>

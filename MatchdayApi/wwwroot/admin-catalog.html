@@ -1,235 +1,238 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Quản trị · Dữ liệu nền — Matchday</title>
-    <link rel="stylesheet" href="assets/css/style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quản trị · Dữ liệu nền — Matchday</title>
+<link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body>
 
-    <div id="site-header"></div>
+<div id="site-header"></div>
 
-    <main>
-        <div class="container">
-            <div class="page-head">
-                <div class="eyebrow">Khu vực quản trị</div>
-                <h1 style="font-size:26px;">Dữ liệu nền</h1>
-                <p>Quản lý sân vận động, đội bóng, cầu thủ và khối ghế/ghế dùng chung cho toàn hệ thống.</p>
-            </div>
+<main>
+  <div class="container">
+    <div class="page-head">
+      <div class="eyebrow">Khu vực quản trị</div>
+      <h1 style="font-size:26px;">Dữ liệu nền</h1>
+      <p>Quản lý sân vận động, đội bóng, cầu thủ và khối ghế/ghế dùng chung cho toàn hệ thống.</p>
+    </div>
 
-            <div id="admin-nav" class="admin-tabs"></div>
+    <div id="admin-nav" class="admin-tabs"></div>
 
-            <div class="admin-tabs">
-                <button type="button" class="admin-tab active" id="ctab-stadiums" onclick="switchCatalogTab('stadiums')">Sân vận động</button>
-                <button type="button" class="admin-tab" id="ctab-teams" onclick="switchCatalogTab('teams')">Đội bóng</button>
-                <button type="button" class="admin-tab" id="ctab-players" onclick="switchCatalogTab('players')">Cầu thủ</button>
-                <button type="button" class="admin-tab" id="ctab-seatblocks" onclick="switchCatalogTab('seatblocks')">Khối ghế</button>
-            </div>
+    <div class="admin-tabs">
+      <button type="button" class="admin-tab active" id="ctab-stadiums" onclick="switchCatalogTab('stadiums')">Sân vận động</button>
+      <button type="button" class="admin-tab" id="ctab-teams" onclick="switchCatalogTab('teams')">Đội bóng</button>
+      <button type="button" class="admin-tab" id="ctab-players" onclick="switchCatalogTab('players')">Cầu thủ</button>
+      <button type="button" class="admin-tab" id="ctab-seatblocks" onclick="switchCatalogTab('seatblocks')">Khối ghế</button>
+    </div>
 
-            <!-- ===== SÂN VẬN ĐỘNG ===== -->
-            <div id="tab-stadiums">
-                <div class="card admin-panel">
-                    <div class="admin-panel-head">
-                        <h2 id="stadium-form-title">Thêm sân vận động</h2>
-                    </div>
-                    <form id="stadium-form">
-                        <div class="form-grid">
-                            <div class="field"><label>Tên sân</label><input type="text" id="stadium-name" maxlength="200" required /></div>
-                            <div class="field"><label>Thành phố</label><input type="text" id="stadium-city" maxlength="100" required /></div>
-                            <div class="field"><label>Sức chứa</label><input type="number" id="stadium-capacity" min="1" max="300000" required /></div>
-                        </div>
-                        <div class="field"><label>Địa chỉ</label><input type="text" id="stadium-address" maxlength="300" required /></div>
-                        <div class="row-actions">
-                            <button type="button" class="btn btn-ghost btn-sm" id="stadium-cancel-btn" style="display:none;" onclick="resetStadiumForm()">Hủy sửa</button>
-                            <button type="submit" class="btn btn-gold btn-sm" id="stadium-submit-btn">Thêm sân</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead><tr><th>Tên sân</th><th>Thành phố</th><th>Địa chỉ</th><th>Sức chứa</th><th></th></tr></thead>
-                        <tbody id="stadium-body"><tr><td colspan="5"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- ===== ĐỘI BÓNG ===== -->
-            <div id="tab-teams" style="display:none;">
-                <div class="card admin-panel">
-                    <div class="admin-panel-head">
-                        <h2 id="team-form-title">Thêm đội bóng</h2>
-                    </div>
-                    <form id="team-form">
-                        <div class="form-grid">
-                            <div class="field"><label>Tên đội</label><input type="text" id="team-name" maxlength="150" required /></div>
-                            <div class="field"><label>Tên viết tắt</label><input type="text" id="team-shortname" maxlength="10" required /></div>
-                            <div class="field"><label>Sân nhà</label><select id="team-stadium"><option value="">— Không chọn —</option></select></div>
-                        </div>
-                        <div class="field"><label>URL logo (tùy chọn)</label><input type="text" id="team-logo" maxlength="500" placeholder="https://..." /></div>
-                        <div class="row-actions">
-                            <button type="button" class="btn btn-ghost btn-sm" id="team-cancel-btn" style="display:none;" onclick="resetTeamForm()">Hủy sửa</button>
-                            <button type="submit" class="btn btn-gold btn-sm" id="team-submit-btn">Thêm đội</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead><tr><th>Tên đội</th><th>Viết tắt</th><th>Sân nhà</th><th></th></tr></thead>
-                        <tbody id="team-body"><tr><td colspan="4"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- ===== CẦU THỦ ===== -->
-            <div id="tab-players" style="display:none;">
-                <div class="card admin-panel">
-                    <div class="admin-panel-head">
-                        <h2 id="player-form-title">Thêm cầu thủ</h2>
-                    </div>
-                    <form id="player-form">
-                        <div class="form-grid">
-                            <div class="field"><label>Họ tên</label><input type="text" id="player-name" maxlength="150" required /></div>
-                            <div class="field"><label>Số áo</label><input type="number" id="player-jersey" min="0" max="99" required /></div>
-                            <div class="field"><label>Đội bóng</label><select id="player-team" required><option value="">-- Chọn đội --</option></select></div>
-                        </div>
-                        <div class="form-grid">
-                            <div class="field">
-                                <label>Vị trí sở trường</label>
-                                <select id="player-position" required>
-                                    <option value="">-- Chọn vị trí --</option>
-                                    <optgroup label="Thủ môn">
-                                        <option value="GK">GK — Thủ môn</option>
-                                    </optgroup>
-                                    <optgroup label="Hậu vệ">
-                                        <option value="CB">CB — Trung vệ</option>
-                                        <option value="LB">LB — Hậu vệ trái</option>
-                                        <option value="RB">RB — Hậu vệ phải</option>
-                                        <option value="LWB">LWB — Hậu vệ cánh trái</option>
-                                        <option value="RWB">RWB — Hậu vệ cánh phải</option>
-                                    </optgroup>
-                                    <optgroup label="Tiền vệ phòng ngự">
-                                        <option value="CDM">CDM — Tiền vệ trụ</option>
-                                        <option value="DM">DM — Tiền vệ phòng ngự</option>
-                                    </optgroup>
-                                    <optgroup label="Tiền vệ trung tâm">
-                                        <option value="CM">CM — Tiền vệ trung tâm</option>
-                                        <option value="LM">LM — Tiền vệ cánh trái</option>
-                                        <option value="RM">RM — Tiền vệ cánh phải</option>
-                                    </optgroup>
-                                    <optgroup label="Tiền vệ tấn công">
-                                        <option value="CAM">CAM — Tiền vệ tấn công trung tâm</option>
-                                        <option value="AM">AM — Tiền vệ tấn công</option>
-                                    </optgroup>
-                                    <optgroup label="Tiền đạo">
-                                        <option value="LW">LW — Chạy cánh trái</option>
-                                        <option value="RW">RW — Chạy cánh phải</option>
-                                        <option value="CF">CF — Tiền đạo lùi</option>
-                                        <option value="ST">ST — Tiền đạo cắm</option>
-                                    </optgroup>
-                                </select>
-                            </div>
-                            <div class="field"><label>Ngày sinh (tùy chọn)</label><input type="date" id="player-dob" /></div>
-                        </div>
-                        <div class="field"><label>URL ảnh (tùy chọn)</label><input type="text" id="player-photo" maxlength="500" placeholder="https://..." /></div>
-                        <div class="row-actions">
-                            <button type="button" class="btn btn-ghost btn-sm" id="player-cancel-btn" style="display:none;" onclick="resetPlayerForm()">Hủy sửa</button>
-                            <button type="submit" class="btn btn-gold btn-sm" id="player-submit-btn">Thêm cầu thủ</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="admin-panel-head" style="margin-bottom:14px;">
-                    <div class="field" style="margin:0; min-width:240px;">
-                        <label>Lọc theo đội</label>
-                        <select id="player-filter-team" onchange="loadPlayers()"><option value="">Tất cả đội</option></select>
-                    </div>
-                </div>
-
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead><tr><th>Áo</th><th>Họ tên</th><th>Vị trí</th><th>Đội bóng</th><th>Ngày sinh</th><th></th></tr></thead>
-                        <tbody id="player-body"><tr><td colspan="6"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- ===== KHỐI GHẾ ===== -->
-            <div id="tab-seatblocks" style="display:none;">
-                <div class="card admin-panel">
-                    <div class="admin-panel-head">
-                        <h2 id="seatblock-form-title">Thêm khối ghế</h2>
-                    </div>
-                    <form id="seatblock-form">
-                        <div class="form-grid">
-                            <div class="field"><label>Tên khối</label><input type="text" id="seatblock-name" maxlength="100" placeholder="VD: Khán đài A" required /></div>
-                            <div class="field"><label>Giá cơ bản (đ)</label><input type="number" id="seatblock-price" min="0" step="1000" required /></div>
-                            <div class="field"><label>Sân vận động</label><select id="seatblock-stadium" required><option value="">-- Chọn sân --</option></select></div>
-                        </div>
-                        <div class="row-actions">
-                            <button type="button" class="btn btn-ghost btn-sm" id="seatblock-cancel-btn" style="display:none;" onclick="resetSeatBlockForm()">Hủy sửa</button>
-                            <button type="submit" class="btn btn-gold btn-sm" id="seatblock-submit-btn">Thêm khối ghế</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="admin-panel-head" style="margin-bottom:14px;">
-                    <div class="field" style="margin:0; min-width:240px;">
-                        <label>Lọc theo sân</label>
-                        <select id="seatblock-filter-stadium" onchange="loadSeatBlocks()"><option value="">Tất cả sân</option></select>
-                    </div>
-                </div>
-
-                <div class="table-wrap">
-                    <table class="data-table">
-                        <thead><tr><th>Tên khối</th><th>Sân vận động</th><th>Giá cơ bản</th><th>Số ghế</th><th></th></tr></thead>
-                        <tbody id="seatblock-body"><tr><td colspan="5"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
-                    </table>
-                </div>
-
-                <div class="card admin-panel" id="seat-manager" style="display:none;">
-                    <div class="admin-panel-head">
-                        <h2 id="seat-manager-title">Quản lý ghế</h2>
-                        <button type="button" class="btn btn-ghost btn-sm" onclick="closeSeatManager()">Đóng</button>
-                    </div>
-
-                    <div class="form-grid">
-                        <div class="field"><label>Hàng ghế (VD: A)</label><input type="text" id="seat-row" maxlength="5" /></div>
-                        <div class="field"><label>Số ghế</label><input type="number" id="seat-number" min="1" max="999" /></div>
-                        <div class="field" style="display:flex; align-items:flex-end;">
-                            <button type="button" class="btn btn-gold btn-sm" style="width:100%;" onclick="addSingleSeat()">Thêm 1 ghế</button>
-                        </div>
-                    </div>
-
-                    <div class="section-title">Tạo nhanh nhiều ghế</div>
-                    <div class="form-grid">
-                        <div class="field"><label>Từ hàng (VD: A)</label><input type="text" id="bulk-row-from" maxlength="5" /></div>
-                        <div class="field"><label>Đến hàng (VD: J)</label><input type="text" id="bulk-row-to" maxlength="5" /></div>
-                        <div class="field"><label>Số ghế mỗi hàng</label><input type="number" id="bulk-seat-count" min="1" max="200" /></div>
-                        <div class="field" style="display:flex; align-items:flex-end;">
-                            <button type="button" class="btn btn-ghost btn-sm" style="width:100%;" onclick="bulkGenerateSeats()">Tạo hàng loạt</button>
-                        </div>
-                    </div>
-                    <p class="text-muted text-sm" id="bulk-progress"></p>
-
-                    <div class="table-wrap">
-                        <table class="data-table">
-                            <thead><tr><th>Hàng</th><th>Số ghế</th><th></th></tr></thead>
-                            <tbody id="seat-body"><tr><td colspan="3" class="text-muted text-center">Đang tải...</td></tr></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
+    <!-- ===== SÂN VẬN ĐỘNG ===== -->
+    <div id="tab-stadiums">
+      <div class="card admin-panel">
+        <div class="admin-panel-head">
+          <h2 id="stadium-form-title">Thêm sân vận động</h2>
         </div>
-    </main>
+        <form id="stadium-form">
+          <div class="form-grid">
+            <div class="field"><label>Tên sân</label><input type="text" id="stadium-name" maxlength="200" required /></div>
+            <div class="field"><label>Thành phố</label><input type="text" id="stadium-city" maxlength="100" required /></div>
+            <div class="field"><label>Sức chứa</label><input type="number" id="stadium-capacity" min="1" max="300000" required /></div>
+          </div>
+          <div class="field"><label>Địa chỉ</label><input type="text" id="stadium-address" maxlength="300" required /></div>
+          <div class="row-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="stadium-cancel-btn" style="display:none;" onclick="resetStadiumForm()">Hủy sửa</button>
+            <button type="submit" class="btn btn-gold btn-sm" id="stadium-submit-btn">Thêm sân</button>
+          </div>
+        </form>
+      </div>
 
-    <div id="site-footer"></div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Tên sân</th><th>Thành phố</th><th>Địa chỉ</th><th>Sức chứa</th><th></th></tr></thead>
+          <tbody id="stadium-body"><tr><td colspan="5"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
 
-    <script src="assets/js/app.js"></script>
-    <script>
+    <!-- ===== ĐỘI BÓNG ===== -->
+    <div id="tab-teams" style="display:none;">
+      <div class="card admin-panel">
+        <div class="admin-panel-head">
+          <h2 id="team-form-title">Thêm đội bóng</h2>
+        </div>
+        <form id="team-form">
+          <div class="form-grid">
+            <div class="field"><label>Tên đội</label><input type="text" id="team-name" maxlength="150" required /></div>
+            <div class="field"><label>Tên viết tắt</label><input type="text" id="team-shortname" maxlength="10" required /></div>
+            <div class="field"><label>Sân nhà</label><select id="team-stadium"><option value="">— Không chọn —</option></select></div>
+          </div>
+          <div class="field"><label>URL logo (tùy chọn — dán link ảnh từ internet)</label><input type="text" id="team-logo" maxlength="500" placeholder="https://..." /></div>
+          <div id="team-logo-preview" style="display:none; margin-bottom:18px;">
+            <img id="team-logo-preview-img" src="" alt="" style="width:80px; height:80px; object-fit:cover; border-radius:var(--radius-sm); border:1px solid var(--line);" />
+          </div>
+          <div class="row-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="team-cancel-btn" style="display:none;" onclick="resetTeamForm()">Hủy sửa</button>
+            <button type="submit" class="btn btn-gold btn-sm" id="team-submit-btn">Thêm đội</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Logo</th><th>Tên đội</th><th>Viết tắt</th><th>Sân nhà</th><th></th></tr></thead>
+          <tbody id="team-body"><tr><td colspan="5"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== CẦU THỦ ===== -->
+    <div id="tab-players" style="display:none;">
+      <div class="card admin-panel">
+        <div class="admin-panel-head">
+          <h2 id="player-form-title">Thêm cầu thủ</h2>
+        </div>
+        <form id="player-form">
+          <div class="form-grid">
+            <div class="field"><label>Họ tên</label><input type="text" id="player-name" maxlength="150" required /></div>
+            <div class="field"><label>Số áo</label><input type="number" id="player-jersey" min="0" max="99" required /></div>
+            <div class="field"><label>Đội bóng</label><select id="player-team" required><option value="">-- Chọn đội --</option></select></div>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Vị trí sở trường</label>
+              <select id="player-position" required>
+                <option value="">-- Chọn vị trí --</option>
+                <optgroup label="Thủ môn">
+                  <option value="GK">GK — Thủ môn</option>
+                </optgroup>
+                <optgroup label="Hậu vệ">
+                  <option value="CB">CB — Trung vệ</option>
+                  <option value="LB">LB — Hậu vệ trái</option>
+                  <option value="RB">RB — Hậu vệ phải</option>
+                  <option value="LWB">LWB — Hậu vệ cánh trái</option>
+                  <option value="RWB">RWB — Hậu vệ cánh phải</option>
+                </optgroup>
+                <optgroup label="Tiền vệ phòng ngự">
+                  <option value="CDM">CDM — Tiền vệ trụ</option>
+                  <option value="DM">DM — Tiền vệ phòng ngự</option>
+                </optgroup>
+                <optgroup label="Tiền vệ trung tâm">
+                  <option value="CM">CM — Tiền vệ trung tâm</option>
+                  <option value="LM">LM — Tiền vệ cánh trái</option>
+                  <option value="RM">RM — Tiền vệ cánh phải</option>
+                </optgroup>
+                <optgroup label="Tiền vệ tấn công">
+                  <option value="CAM">CAM — Tiền vệ tấn công trung tâm</option>
+                  <option value="AM">AM — Tiền vệ tấn công</option>
+                </optgroup>
+                <optgroup label="Tiền đạo">
+                  <option value="LW">LW — Chạy cánh trái</option>
+                  <option value="RW">RW — Chạy cánh phải</option>
+                  <option value="CF">CF — Tiền đạo lùi</option>
+                  <option value="ST">ST — Tiền đạo cắm</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="field"><label>Ngày sinh (tùy chọn)</label><input type="date" id="player-dob" /></div>
+          </div>
+          <div class="field"><label>URL ảnh (tùy chọn)</label><input type="text" id="player-photo" maxlength="500" placeholder="https://..." /></div>
+          <div class="row-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="player-cancel-btn" style="display:none;" onclick="resetPlayerForm()">Hủy sửa</button>
+            <button type="submit" class="btn btn-gold btn-sm" id="player-submit-btn">Thêm cầu thủ</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="admin-panel-head" style="margin-bottom:14px;">
+        <div class="field" style="margin:0; min-width:240px;">
+          <label>Lọc theo đội</label>
+          <select id="player-filter-team" onchange="loadPlayers()"><option value="">Tất cả đội</option></select>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Áo</th><th>Họ tên</th><th>Vị trí</th><th>Đội bóng</th><th>Ngày sinh</th><th></th></tr></thead>
+          <tbody id="player-body"><tr><td colspan="6"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== KHỐI GHẾ ===== -->
+    <div id="tab-seatblocks" style="display:none;">
+      <div class="card admin-panel">
+        <div class="admin-panel-head">
+          <h2 id="seatblock-form-title">Thêm khối ghế</h2>
+        </div>
+        <form id="seatblock-form">
+          <div class="form-grid">
+            <div class="field"><label>Tên khối</label><input type="text" id="seatblock-name" maxlength="100" placeholder="VD: Khán đài A" required /></div>
+            <div class="field"><label>Giá cơ bản (đ)</label><input type="number" id="seatblock-price" min="0" step="1000" required /></div>
+            <div class="field"><label>Sân vận động</label><select id="seatblock-stadium" required><option value="">-- Chọn sân --</option></select></div>
+          </div>
+          <div class="row-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="seatblock-cancel-btn" style="display:none;" onclick="resetSeatBlockForm()">Hủy sửa</button>
+            <button type="submit" class="btn btn-gold btn-sm" id="seatblock-submit-btn">Thêm khối ghế</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="admin-panel-head" style="margin-bottom:14px;">
+        <div class="field" style="margin:0; min-width:240px;">
+          <label>Lọc theo sân</label>
+          <select id="seatblock-filter-stadium" onchange="loadSeatBlocks()"><option value="">Tất cả sân</option></select>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Tên khối</th><th>Sân vận động</th><th>Giá cơ bản</th><th>Số ghế</th><th></th></tr></thead>
+          <tbody id="seatblock-body"><tr><td colspan="5"><div class="skeleton" style="height:20px"></div></td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="card admin-panel" id="seat-manager" style="display:none;">
+        <div class="admin-panel-head">
+          <h2 id="seat-manager-title">Quản lý ghế</h2>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="closeSeatManager()">Đóng</button>
+        </div>
+
+        <div class="form-grid">
+          <div class="field"><label>Hàng ghế (VD: A)</label><input type="text" id="seat-row" maxlength="5" /></div>
+          <div class="field"><label>Số ghế</label><input type="number" id="seat-number" min="1" max="999" /></div>
+          <div class="field" style="display:flex; align-items:flex-end;">
+            <button type="button" class="btn btn-gold btn-sm" style="width:100%;" onclick="addSingleSeat()">Thêm 1 ghế</button>
+          </div>
+        </div>
+
+        <div class="section-title">Tạo nhanh nhiều ghế</div>
+        <div class="form-grid">
+          <div class="field"><label>Từ hàng (VD: A)</label><input type="text" id="bulk-row-from" maxlength="5" /></div>
+          <div class="field"><label>Đến hàng (VD: J)</label><input type="text" id="bulk-row-to" maxlength="5" /></div>
+          <div class="field"><label>Số ghế mỗi hàng</label><input type="number" id="bulk-seat-count" min="1" max="200" /></div>
+          <div class="field" style="display:flex; align-items:flex-end;">
+            <button type="button" class="btn btn-ghost btn-sm" style="width:100%;" onclick="bulkGenerateSeats()">Tạo hàng loạt</button>
+          </div>
+        </div>
+        <p class="text-muted text-sm" id="bulk-progress"></p>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Hàng</th><th>Số ghế</th><th></th></tr></thead>
+            <tbody id="seat-body"><tr><td colspan="3" class="text-muted text-center">Đang tải...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div id="site-footer"></div>
+
+<script src="assets/js/app.js"></script>
+<script>
 if (MDA.requireAdmin()) {
   MDA.renderHeader('admin');
   MDA.renderAdminNav('catalog');
@@ -364,10 +367,21 @@ async function loadTeams() {
   }
 }
 
+/* Ảnh logo thật (nếu Admin đã dán link) — lỗi/chưa có thì rơi về huy hiệu
+   tự tạo theo màu riêng từng đội (MDA.crestTheme), để bảng luôn có gì đó để
+   nhìn thay vì ô trống, và admin thấy trước đúng màu sẽ hiện ở giao diện. */
+function teamThumbHtml(t) {
+  const theme = MDA.crestTheme(t.name);
+  const fallback = `<div style="width:36px; height:36px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-weight:700; font-size:12px; background:${theme.bg}; color:${theme.fg};">${MDA.initials(t.name)}</div>`;
+  if (!t.logoUrl) return fallback;
+  return `<img src="${t.logoUrl}" alt="" style="width:36px; height:36px; object-fit:cover; border-radius:var(--radius-sm); border:1px solid var(--line);" onerror="this.outerHTML='${fallback.replace(/'/g, "\\'")}';" />`;
+}
+
 function renderTeamTable() {
   const body = document.getElementById('team-body');
   body.innerHTML = teamsCache.length ? teamsCache.map(t => `
     <tr>
+      <td>${teamThumbHtml(t)}</td>
       <td>${t.name}</td>
       <td class="mono">${t.shortName}</td>
       <td class="text-muted text-sm">${t.homeStadiumName || '—'}</td>
@@ -377,7 +391,7 @@ function renderTeamTable() {
           <button class="btn btn-sm btn-danger" onclick="deleteTeam(${t.id})">Xóa</button>
         </div>
       </td>
-    </tr>`).join('') : `<tr><td colspan="4" class="text-muted text-center">Chưa có đội bóng nào.</td></tr>`;
+    </tr>`).join('') : `<tr><td colspan="5" class="text-muted text-center">Chưa có đội bóng nào.</td></tr>`;
 }
 
 function populateTeamSelects() {
@@ -385,6 +399,18 @@ function populateTeamSelects() {
   document.getElementById('player-team').innerHTML = `<option value="">-- Chọn đội --</option>${opts}`;
   document.getElementById('player-filter-team').innerHTML = `<option value="">Tất cả đội</option>${opts}`;
 }
+
+document.getElementById('team-logo').addEventListener('input', (e) => {
+  const url = e.target.value.trim();
+  const preview = document.getElementById('team-logo-preview');
+  const img = document.getElementById('team-logo-preview-img');
+  if (url) {
+    img.src = url;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
+});
 
 document.getElementById('team-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -417,6 +443,7 @@ function editTeam(id) {
   document.getElementById('team-name').value = t.name;
   document.getElementById('team-shortname').value = t.shortName;
   document.getElementById('team-logo').value = t.logoUrl || '';
+  document.getElementById('team-logo').dispatchEvent(new Event('input'));
   document.getElementById('team-stadium').value = t.homeStadiumId || '';
   document.getElementById('team-form-title').textContent = `Sửa đội: ${t.name}`;
   document.getElementById('team-submit-btn').textContent = 'Lưu thay đổi';
@@ -427,6 +454,7 @@ function editTeam(id) {
 function resetTeamForm() {
   editTeamId = null;
   document.getElementById('team-form').reset();
+  document.getElementById('team-logo-preview').style.display = 'none';
   document.getElementById('team-form-title').textContent = 'Thêm đội bóng';
   document.getElementById('team-submit-btn').textContent = 'Thêm đội';
   document.getElementById('team-cancel-btn').style.display = 'none';
@@ -725,6 +753,6 @@ async function bulkGenerateSeats() {
   await loadSeatBlocks();
   MDA.toast(`Đã tạo ${created} ghế mới.`, 'success');
 }
-    </script>
+</script>
 </body>
 </html>

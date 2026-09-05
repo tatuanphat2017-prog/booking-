@@ -38,6 +38,10 @@
             grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             gap: 16px;
         }
+
+        .snack-card .qty-control {
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -47,9 +51,11 @@
     <main>
         <div class="container">
             <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap; border-bottom:1px solid var(--line-soft); padding-bottom:20px;">
-                <h1 style="font-size:26px;">Thực đơn sân vận động</h1>
-                <p class="text-muted text-sm" style="max-width:400px; margin:0;">Chọn số lượng ngay trong bước đặt vé — giao tới đúng chỗ ngồi giờ nghỉ giữa hiệp.</p>
+                <h1 style="font-size:26px;" id="page-title">Thực đơn sân vận động</h1>
+                <p class="text-muted text-sm" id="page-hint" style="max-width:400px; margin:0;">Chọn số lượng ngay trong bước đặt vé — giao tới đúng chỗ ngồi giờ nghỉ giữa hiệp.</p>
             </div>
+
+            <div id="order-notice"></div>
 
             <div id="snack-list" class="snack-grid">
                 <div class="skeleton" style="height:110px"></div>
@@ -67,31 +73,128 @@
         MDA.renderHeader('food');
         MDA.renderFooter();
 
+        const matchId = MDA.qs('matchId') ? parseInt(MDA.qs('matchId'), 10) : null;
+        let orderMode = false; // true khi có matchId -> cho đặt hàng thật, false -> chỉ xem menu
+        let foodQty = {};       // foodItemId -> qty
+        let foodItems = [];
+        let matchInfo = null;
+        let submitting = false;
+
         function snackCard(f) {
             const media = f.photoUrl
                 ? `<img class="snack-photo" src="${f.photoUrl}" alt="${f.name}" onerror="this.replaceWith(Object.assign(document.createElement('div'), { className: 'snack-icon', innerHTML: MDA.icon('food') }));" />`
                 : `<div class="snack-icon">${MDA.icon('food')}</div>`;
+
+            const qtyControl = orderMode ? `
+        <div class="qty-control">
+          <button type="button" onclick="changeQty(${f.id}, -1)">−</button>
+          <span class="qty-num" id="qty-${f.id}">${foodQty[f.id] || 0}</span>
+          <button type="button" onclick="changeQty(${f.id}, 1)">+</button>
+        </div>` : '';
+
             return `
         <div class="card snack-card fade-in">
           ${media}
           <div style="font-weight:600; font-size:15px;">${f.name}</div>
           <div class="mono text-gold">${MDA.money(f.price)}</div>
+          ${qtyControl}
         </div>`;
+        }
+
+        function renderList() {
+            const list = document.getElementById('snack-list');
+            list.innerHTML = foodItems.length
+                ? foodItems.map(snackCard).join('')
+                : `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">${MDA.icon('food')}</div><p>Hiện chưa có món ăn/thức uống nào được mở bán.</p></div>`;
+
+            if (orderMode) renderSummaryBar();
+        }
+
+        function changeQty(id, delta) {
+            foodQty[id] = Math.max(0, (foodQty[id] || 0) + delta);
+            document.getElementById(`qty-${id}`).textContent = foodQty[id];
+            renderSummaryBar();
+        }
+
+        function renderSummaryBar() {
+            let bar = document.getElementById('food-summary-bar');
+            const totalQty = Object.values(foodQty).reduce((s, q) => s + q, 0);
+            const totalAmount = foodItems.reduce((sum, f) => sum + f.price * (foodQty[f.id] || 0), 0);
+
+            if (!bar) {
+                bar = document.createElement('div');
+                bar.id = 'food-summary-bar';
+                bar.className = 'summary-bar';
+                document.querySelector('main .container').appendChild(bar);
+            }
+
+            bar.innerHTML = `
+        <div>
+          <div class="total-label" id="food-summary-detail">${totalQty ? `${totalQty} món` : 'Chưa chọn món nào.'}</div>
+          <div class="total-amount">${MDA.money(totalAmount)}</div>
+        </div>
+        <button class="btn btn-gold" id="btn-order-food" ${totalQty === 0 || submitting ? 'disabled' : ''} onclick="submitOrder()">${submitting ? 'Đang tạo đơn...' : 'Đặt & Thanh toán'}</button>`;
+        }
+
+        async function submitOrder() {
+            const items = Object.entries(foodQty)
+                .filter(([, q]) => q > 0)
+                .map(([foodItemId, quantity]) => ({ foodItemId: Number(foodItemId), quantity }));
+
+            if (!items.length) { MDA.toast('Chưa chọn món nào.', 'error'); return; }
+
+            submitting = true;
+            renderSummaryBar();
+
+            try {
+                const booking = await MDA.api('/api/Bookings/food-only', {
+                    method: 'POST',
+                    body: JSON.stringify({ matchId, items })
+                });
+                const pay = await MDA.api(`/api/Payments/vnpay/create/${booking.id}`, { method: 'POST' });
+                window.location.href = pay.paymentUrl;
+            } catch (err) {
+                MDA.toast(err.message, 'error');
+                submitting = false;
+                renderSummaryBar();
+            }
         }
 
         async function load() {
             try {
-                const items = await MDA.api('/api/FoodItems?onlyAvailable=true');
-                const list = document.getElementById('snack-list');
-                list.innerHTML = items.length
-                    ? items.map(snackCard).join('')
-                    : `<div class="empty-state" style="grid-column:1/-1;"><div class="icon">${MDA.icon('food')}</div><p>Hiện chưa có món ăn/thức uống nào được mở bán.</p></div>`;
+                foodItems = await MDA.api('/api/FoodItems?onlyAvailable=true');
+
+                if (orderMode) {
+                    document.getElementById('page-title').textContent = 'Đặt thêm đồ ăn & thức uống';
+                    const noticeEl = document.getElementById('order-notice');
+                    if (matchInfo) {
+                        document.getElementById('page-hint').textContent = `${matchInfo.homeTeamName} vs ${matchInfo.awayTeamName} · ${MDA.formatDateTime(matchInfo.matchDateTime)}`;
+                    } else {
+                        document.getElementById('page-hint').textContent = 'Chọn số lượng rồi thanh toán — món sẽ được giao tới đúng chỗ ngồi bạn đã đặt.';
+                    }
+                    noticeEl.innerHTML = '';
+                }
+
+                renderList();
             } catch (err) {
                 MDA.toast('Không tải được thực đơn: ' + err.message, 'error');
             }
         }
 
-        load();
+        async function init() {
+            if (matchId) {
+                if (!MDA.requireLogin()) return;
+                orderMode = true;
+                try {
+                    matchInfo = await MDA.api(`/api/Dashboard/matches/${matchId}`);
+                } catch (err) {
+                    matchInfo = null;
+                }
+            }
+            load();
+        }
+
+        init();
     </script>
 </body>
 </html>

@@ -1,77 +1,81 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Quản trị · Tổng quan — Matchday</title>
-    <link rel="stylesheet" href="assets/css/style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quản trị · Tổng quan — Matchday</title>
+<link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body>
 
-    <div id="site-header"></div>
+<div id="site-header"></div>
 
-    <main>
-        <div class="container">
-            <div class="page-head">
-                <div class="eyebrow">Khu vực quản trị</div>
-                <h1 style="font-size:26px;">Tổng quan doanh thu</h1>
-            </div>
+<main>
+  <div class="container">
+    <div class="page-head">
+      <div class="eyebrow">Khu vực quản trị</div>
+      <h1 style="font-size:26px;">Tổng quan doanh thu</h1>
+    </div>
 
-            <div id="admin-nav" class="admin-tabs"></div>
+    <div id="admin-nav" class="admin-tabs"></div>
 
-            <div id="stat-grid" class="stat-grid">
-                <div class="skeleton" style="height:88px"></div>
-                <div class="skeleton" style="height:88px"></div>
-                <div class="skeleton" style="height:88px"></div>
-                <div class="skeleton" style="height:88px"></div>
-            </div>
+    <div id="stat-hero">
+      <div class="skeleton" style="height:110px"></div>
+    </div>
 
-            <div class="section-title">Doanh thu theo ngày (14 ngày gần nhất)</div>
-            <div id="revenue-day-card" class="card admin-panel">
-                <div class="skeleton" style="height:160px"></div>
-            </div>
+    <div id="stat-grid" class="stat-grid">
+      <div class="skeleton" style="height:88px"></div>
+      <div class="skeleton" style="height:88px"></div>
+      <div class="skeleton" style="height:88px"></div>
+      <div class="skeleton" style="height:88px"></div>
+    </div>
 
-            <div class="section-title">Doanh thu theo trận đấu</div>
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Trận đấu</th>
-                            <th>Ngày giờ</th>
-                            <th>Vé bán</th>
-                            <th>Doanh thu vé</th>
-                            <th>Doanh thu đồ ăn</th>
-                            <th>Tổng</th>
-                        </tr>
-                    </thead>
-                    <tbody id="revenue-match-body">
-                        <tr><td colspan="6"><div class="skeleton" style="height:20px"></div></td></tr>
-                    </tbody>
-                </table>
-            </div>
+    <div class="section-title">Doanh thu theo ngày (14 ngày gần nhất)</div>
+    <div id="revenue-day-card" class="card admin-panel">
+      <div class="skeleton" style="height:160px"></div>
+    </div>
 
-            <div class="section-title">Món ăn/thức uống bán chạy</div>
-            <div class="table-wrap">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Món</th>
-                            <th>Số lượng đã bán</th>
-                            <th>Doanh thu</th>
-                        </tr>
-                    </thead>
-                    <tbody id="top-food-body">
-                        <tr><td colspan="3"><div class="skeleton" style="height:20px"></div></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </main>
+    <div class="section-title">Doanh thu theo trận đấu</div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Trận đấu</th>
+            <th>Ngày giờ</th>
+            <th>Vé bán</th>
+            <th>Doanh thu vé</th>
+            <th>Doanh thu đồ ăn</th>
+            <th>Tổng</th>
+          </tr>
+        </thead>
+        <tbody id="revenue-match-body">
+          <tr><td colspan="6"><div class="skeleton" style="height:20px"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
 
-    <div id="site-footer"></div>
+    <div class="section-title">Món ăn/thức uống bán chạy</div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Món</th>
+            <th>Số lượng đã bán</th>
+            <th>Doanh thu</th>
+          </tr>
+        </thead>
+        <tbody id="top-food-body">
+          <tr><td colspan="3"><div class="skeleton" style="height:20px"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
 
-    <script src="assets/js/app.js"></script>
-    <script>
+<div id="site-footer"></div>
+
+<script src="assets/js/app.js"></script>
+<script>
 if (MDA.requireAdmin()) {
   MDA.renderHeader('admin');
   MDA.renderAdminNav('dashboard');
@@ -88,6 +92,17 @@ function statCard(label, value, sub) {
     </div>`;
 }
 
+function heroStat(label, value, sub) {
+  return `
+    <div class="card stat-hero">
+      <div>
+        <div class="stat-label">${label}</div>
+        <div class="stat-value">${value}</div>
+      </div>
+      ${sub ? `<div class="stat-sub">${sub}</div>` : ''}
+    </div>`;
+}
+
 async function loadAll() {
   await Promise.all([loadOverview(), loadRevenueByDay(), loadRevenueByMatch(), loadTopFood()]);
 }
@@ -95,8 +110,12 @@ async function loadAll() {
 async function loadOverview() {
   try {
     const o = await MDA.api('/api/AdminDashboard/overview');
+    document.getElementById('stat-hero').innerHTML = heroStat(
+      'Tổng doanh thu',
+      MDA.money(o.totalRevenue),
+      `Vé ${MDA.money(o.seatRevenue)} · Đồ ăn ${MDA.money(o.foodRevenue)}`
+    );
     document.getElementById('stat-grid').innerHTML = [
-      statCard('Tổng doanh thu', MDA.money(o.totalRevenue), `Vé ${MDA.money(o.seatRevenue)} · Đồ ăn ${MDA.money(o.foodRevenue)}`),
       statCard('Tổng số đơn', o.totalBookings, `${o.paidBookings} đã thanh toán · ${o.pendingBookings} chờ`),
       statCard('Vé đã bán', o.totalTicketsSold),
       statCard('Yêu cầu hoàn tiền chờ duyệt', o.pendingRefundRequests, `${o.approvedRefunds} đã duyệt · ${o.rejectedRefunds} từ chối`),
@@ -163,6 +182,6 @@ async function loadTopFood() {
     MDA.toast('Không tải được món bán chạy: ' + err.message, 'error');
   }
 }
-    </script>
+</script>
 </body>
 </html>

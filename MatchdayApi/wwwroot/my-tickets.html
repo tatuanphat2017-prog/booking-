@@ -63,6 +63,7 @@
 
         function bookingCard(b) {
             const refund = refundsByBooking[b.id];
+            const hasSeats = b.seats.length > 0;
             const seatLabels = b.seats.map(s => `${s.seatBlockName} ${s.rowLabel}${s.seatNumber}`).join(', ');
 
             let actions = '';
@@ -71,7 +72,10 @@
           <button class="btn btn-gold btn-sm" onclick="payNow(${b.id})">Thanh toán ngay</button>
           <button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})">Hủy vé</button>`;
             } else if (b.status === 'Paid') {
-                actions = `<button class="btn btn-ghost btn-sm" onclick="toggleTickets(${b.id})">Xem vé điện tử</button>`;
+                if (hasSeats) {
+                    actions = `<button class="btn btn-ghost btn-sm" onclick="toggleTickets(${b.id})">Xem vé điện tử</button>`;
+                    actions += `<a class="btn btn-ghost btn-sm" href="food-menu.html?matchId=${b.matchId}">Đặt thêm đồ ăn</a>`;
+                }
                 if (!refund || refund.status === 'Rejected') {
                     actions += `<button class="btn btn-danger btn-sm" onclick="requestRefund(${b.id})">Yêu cầu hoàn tiền</button>`;
                 }
@@ -90,7 +94,9 @@
             </div>
             <h3 style="font-size:16px; margin-bottom:6px;">${b.homeTeamName} <span class="text-faint" style="font-weight:400;">vs</span> ${b.awayTeamName}</h3>
             <div class="meta-row"><span>${MDA.icon('calendar')} ${MDA.formatDateTime(b.matchDateTime)}</span></div>
-            <div class="text-sm text-muted mb-8">Ghế: ${seatLabels || '—'}</div>
+            ${hasSeats
+                    ? `<div class="text-sm text-muted mb-8">Ghế: ${seatLabels}</div>`
+                    : `<div class="text-sm text-muted mb-8">Đơn đặt thêm đồ ăn (không kèm ghế)</div>`}
             ${b.foodItems.length ? `<div class="text-sm text-muted mb-8">Đồ ăn: ${b.foodItems.map(f => `${f.name} x${f.quantity}`).join(', ')}</div>` : ''}
             ${refundNote}
             <div class="flex gap-8 mt-16">${actions}</div>

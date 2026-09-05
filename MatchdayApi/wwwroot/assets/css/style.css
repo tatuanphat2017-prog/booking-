@@ -1,1406 +1,978 @@
 /* =========================================================================
    MatchdayApi — Design tokens
-   Hướng thiết kế: sân cỏ về đêm dưới đèn pha (nền gần đen, ánh xanh olive
-   trầm) + nhấn vàng đồng cổ điển kiểu tem/huy hiệu VIP trên vé xem bóng đá
-   thật, KHÔNG dùng vàng chanh/neon. Dấu ấn riêng: mọi thẻ trận đấu & vé điện
-   tử đều có dáng "cuống vé xé" (viền đứt nét + 2 vết khoét tròn ở mép) —
-   mô phỏng đúng vé giấy xem bóng đá ngoài đời, thay vì khung bo góc chung
-   chung của một dashboard bất kỳ.
+   Hướng thiết kế (v2 — "esports/gaming rực rỡ" theo yêu cầu, dùng ui-ux-pro-max
+   để chọn bảng màu): nền xanh navy gần đen dưới đèn sân vận động + 2 màu neon
+   lấy cảm hứng từ chính giao diện game bóng đá/esports (xanh cyan điện +
+   xanh lá neon), đỏ neon cho cảnh báo — thay cho tông vàng đồng trầm trước
+   đây. Dấu ấn riêng vẫn giữ nguyên: mọi thẻ trận đấu & vé điện tử có dáng
+   "cuống vé xé" (viền đứt nét + 2 vết khoét tròn ở mép). Font tiêu đề đổi
+   sang Barlow Condensed (đậm, hẹp, kiểu bảng tỷ số/scoreboard thể thao) —
+   đã kiểm tra hỗ trợ đầy đủ tiếng Việt có dấu, không dùng Russo One vì font
+   đó KHÔNG có bộ ký tự tiếng Việt (sẽ vỡ dấu ở tiêu đề).
    ========================================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-    --bg: #0a0c08;
-    --bg-elevated: #14170f;
-    --bg-elevated-2: #1c2016;
-    --line: #2a2e21;
-    --line-soft: #1f2317;
-    --gold: #c9a24b;
-    --gold-bright: #e9c878;
-    --gold-dim: #7a652f;
-    --gold-wash: rgba(201, 162, 75, 0.1);
-    --text: #f3efe2;
-    --text-muted: #9a9884;
-    --text-faint: #6b6a5a;
-    --pitch: #3c5a41;
-    --pitch-bright: #6fae7a;
-    --danger: #c1594a;
-    --danger-bright: #e17b6c;
-    --radius: 14px;
-    --radius-sm: 8px;
-    --font-display: 'Fraunces', Georgia, serif;
-    --font-body: 'Inter', -apple-system, 'Segoe UI', sans-serif;
-    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
-    --shadow-card: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.6);
-    --ease: cubic-bezier(.22,.61,.36,1);
+  --bg: #05070d;
+  --bg-elevated: #0c1120;
+  --bg-elevated-2: #131b30;
+  --line: #26314d;
+  --line-soft: #1a2338;
+
+  --gold: #00c2ff;
+  --gold-bright: #6fe3ff;
+  --gold-dim: #0a6e8c;
+  --gold-wash: rgba(0, 194, 255, 0.14);
+
+  --text: #eaf3ff;
+  --text-muted: #8fa3c4;
+  --text-faint: #7d8db3;
+
+  --pitch: #16c77a;
+  --pitch-bright: #6bffaf;
+  --danger: #ff3b4e;
+  --danger-bright: #ff7a87;
+
+  --radius: 14px;
+  --radius-sm: 8px;
+
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-body: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  --shadow-card: 0 1px 2px rgba(0,0,0,.5), 0 12px 32px -12px rgba(0,0,0,.7);
+  --ease: cubic-bezier(.22,.61,.36,1);
 }
 
-* {
-    box-sizing: border-box;
-}
-
-html {
-    color-scheme: dark;
-}
+* { box-sizing: border-box; }
+html { color-scheme: dark; }
 
 body {
-    margin: 0;
-    background: radial-gradient(1200px 600px at 15% -10%, rgba(201,162,75,.07), transparent 60%), radial-gradient(900px 500px at 100% 0%, rgba(60,90,65,.10), transparent 55%), var(--bg);
-    color: var(--text);
-    font-family: var(--font-body);
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(0,194,255,.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(22,199,122,.12), transparent 55%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
 h1, h2, h3, .display {
-    font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    color: var(--text);
-    margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 0;
 }
 
-a {
-    color: inherit;
-    text-decoration: none;
-}
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
 
-img {
-    max-width: 100%;
-    display: block;
-}
-
-::selection {
-    background: var(--gold-dim);
-    color: var(--text);
-}
+::selection { background: var(--gold-dim); color: var(--text); }
 
 :focus-visible {
-    outline: 2px solid var(--gold-bright);
-    outline-offset: 2px;
-    border-radius: 4px;
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-        animation-duration: .001ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: .001ms !important;
-        scroll-behavior: auto !important;
-    }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-/* ---------- Chuyển trang mượt (View Transitions API) ---------- */
+/* ---------- Chuyển trang mượt (View Transitions API) ----------
+   Mỗi trang ở đây là 1 file HTML riêng (tải lại toàn trang khi bấm link),
+   không phải SPA. Khai báo @view-transition cho trình duyệt tự chụp ảnh
+   trang cũ/mới rồi crossfade giữa 2 lần tải — không cần viết JS điều
+   hướng riêng. Trình duyệt chưa hỗ trợ (Firefox/Safari cũ) sẽ tự bỏ qua,
+   chuyển trang bình thường như trước, không lỗi gì cả. */
 @view-transition {
-    navigation: auto;
+  navigation: auto;
 }
-
 ::view-transition-old(root) {
-    animation: view-fade-out .22s var(--ease) both;
+  animation: view-fade-out .22s var(--ease) both;
 }
-
 ::view-transition-new(root) {
-    animation: view-fade-in .32s var(--ease) both;
+  animation: view-fade-in .32s var(--ease) both;
 }
-
-@keyframes view-fade-out {
-    to {
-        opacity: 0;
-    }
-}
-
-@keyframes view-fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-}
-
+@keyframes view-fade-out { to { opacity: 0; } }
+@keyframes view-fade-in { from { opacity: 0; transform: translateY(8px); } }
 @media (prefers-reduced-motion: reduce) {
-    ::view-transition-old(root), ::view-transition-new(root) {
-        animation: none;
-    }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
 }
 
 /* ---------- Layout ---------- */
 
 .container {
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 0 24px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 
 .site-header {
-    position: sticky;
-    top: 0;
-    z-index: 40;
-    background: rgba(10, 12, 8, .82);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--line-soft);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(5, 7, 13, .82);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line-soft);
 }
 
-    .site-header .bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        height: 68px;
-    }
+.site-header .bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 68px;
+}
 
 .brand {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    font-family: var(--font-display);
-    font-size: 21px;
-    font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+}
+.brand .dot { color: var(--gold); }
+.brand small {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
-    .brand .dot {
-        color: var(--gold);
-    }
-
-    .brand small {
-        font-family: var(--font-mono);
-        font-size: 10px;
-        color: var(--text-faint);
-        letter-spacing: .12em;
-        text-transform: uppercase;
-        font-weight: 500;
-    }
-
 .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 28px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
 }
 
 .nav-link {
-    position: relative;
-    font-size: 14px;
-    color: var(--text-muted);
-    padding: 4px 0;
-    transition: color .2s var(--ease);
+  position: relative;
+  font-size: 14px;
+  color: var(--text-muted);
+  padding: 4px 0;
+  transition: color .2s var(--ease);
 }
-
-    .nav-link::after {
-        content: '';
-        position: absolute;
-        left: 0;
-        right: 100%;
-        bottom: -2px;
-        height: 1px;
-        background: var(--gold-bright);
-        transition: right .28s var(--ease);
-    }
-
-    .nav-link:hover {
-        color: var(--text);
-    }
-
-        .nav-link:hover::after {
-            right: 0;
-        }
-
-    .nav-link.active {
-        color: var(--gold-bright);
-    }
-
-main {
-    padding: 48px 0 96px;
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 100%;
+  bottom: -2px;
+  height: 1px;
+  background: var(--gold-bright);
+  transition: right .28s var(--ease);
 }
+.nav-link:hover { color: var(--text); }
+.nav-link:hover::after { right: 0; }
+.nav-link.active { color: var(--gold-bright); }
 
-.page-head {
-    margin-bottom: 36px;
-}
+main { padding: 48px 0 96px; }
 
+.page-head { margin-bottom: 36px; }
 .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: var(--gold);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
 }
-
-    .eyebrow::before {
-        content: '';
-        width: 20px;
-        height: 1px;
-        background: var(--gold-dim);
-    }
-
-.page-head h1 {
-    font-size: 34px;
-    margin-bottom: 8px;
+.eyebrow::before {
+  content: '';
+  width: 20px; height: 1px;
+  background: var(--gold-dim);
 }
-
-.page-head p {
-    color: var(--text-muted);
-    font-size: 15px;
-    max-width: 560px;
-}
+.page-head h1 { font-size: 34px; margin-bottom: 8px; }
+.page-head p { color: var(--text-muted); font-size: 15px; max-width: 560px; }
 
 /* ---------- Buttons ---------- */
 
 .btn {
-    appearance: none;
-    border: 1px solid var(--line);
-    background: var(--bg-elevated-2);
-    color: var(--text);
-    font-family: var(--font-body);
-    font-size: 14px;
-    font-weight: 600;
-    padding: 11px 20px;
-    border-radius: 999px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: transform .15s var(--ease), border-color .2s, background .2s;
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--bg-elevated-2);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform .15s var(--ease), border-color .2s, background .2s, box-shadow .2s var(--ease);
 }
-
-    .btn:hover {
-        border-color: var(--gold-dim);
-        transform: translateY(-1px);
-    }
-
-    .btn:active {
-        transform: translateY(0);
-    }
-
-    .btn:disabled {
-        opacity: .45;
-        cursor: not-allowed;
-        transform: none;
-    }
+.btn:hover { border-color: var(--gold-dim); transform: translateY(-1px) scale(1.015); }
+.btn:active { transform: translateY(0) scale(.96); transition-duration: .08s; }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 
 .btn-gold {
-    background: linear-gradient(180deg, var(--gold-bright), var(--gold));
-    border-color: transparent;
-    color: #171307;
-    box-shadow: 0 8px 20px -8px rgba(201,162,75,.55);
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  border-color: transparent;
+  color: #071019;
+  box-shadow: 0 8px 20px -8px rgba(0,194,255,.55);
 }
-
-    .btn-gold:hover {
-        filter: brightness(1.07);
-        border-color: transparent;
-    }
+.btn-gold:hover {
+  filter: brightness(1.08);
+  border-color: transparent;
+  box-shadow: 0 0 0 1px var(--gold-bright), 0 10px 28px -6px rgba(0,194,255,.75), 0 0 22px rgba(111,227,255,.5);
+}
 
 .btn-ghost {
-    background: transparent;
-    border-color: var(--line);
-    color: var(--text-muted);
+  background: transparent;
+  border-color: var(--line);
+  color: var(--text-muted);
 }
-
-    .btn-ghost:hover {
-        color: var(--text);
-    }
+.btn-ghost:hover { color: var(--text); }
 
 .btn-danger {
-    background: transparent;
-    border-color: rgba(193,89,74,.4);
-    color: var(--danger-bright);
+  background: transparent;
+  border-color: rgba(255,59,78,.4);
+  color: var(--danger-bright);
 }
+.btn-danger:hover { background: rgba(255,59,78,.1); border-color: var(--danger-bright); box-shadow: 0 0 16px rgba(255,59,78,.35); }
 
-    .btn-danger:hover {
-        background: rgba(193,89,74,.1);
-        border-color: var(--danger-bright);
-    }
-
-.btn-block {
-    width: 100%;
-}
-
-.btn-sm {
-    padding: 7px 14px;
-    font-size: 13px;
-}
+.btn-block { width: 100%; }
+.btn-sm { padding: 7px 14px; font-size: 13px; }
 
 /* ---------- Forms ---------- */
 
-.field {
-    margin-bottom: 18px;
+.field { margin-bottom: 18px; }
+.field label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 7px;
+  letter-spacing: .02em;
 }
-
-    .field label {
-        display: block;
-        font-size: 12px;
-        color: var(--text-muted);
-        margin-bottom: 7px;
-        letter-spacing: .02em;
-    }
-
-    .field input, .field select, .field textarea {
-        width: 100%;
-        background: var(--bg);
-        border: 1px solid var(--line);
-        color: var(--text);
-        font-family: var(--font-body);
-        font-size: 14px;
-        padding: 12px 14px;
-        border-radius: var(--radius-sm);
-        transition: border-color .2s;
-    }
-
-        .field input:focus, .field select:focus, .field textarea:focus {
-            border-color: var(--gold-dim);
-            outline: none;
-        }
-
-    .field .hint {
-        font-size: 12px;
-        color: var(--text-faint);
-        margin-top: 6px;
-    }
-
-.field-error input {
-    border-color: var(--danger);
+.field input, .field select, .field textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  transition: border-color .2s;
 }
-
-.field-error .hint {
-    color: var(--danger-bright);
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--gold-dim);
+  outline: none;
 }
+.field .hint { font-size: 12px; color: var(--text-faint); margin-top: 6px; }
+.field-error input { border-color: var(--danger); }
+.field-error .hint { color: var(--danger-bright); }
 
+/* Ẩn nhãn khỏi màn hình nhưng vẫn đọc được bằng trình đọc màn hình —
+   dùng cho input chỉ có placeholder làm gợi ý, tránh mất nhãn khi gõ chữ. */
 label.sr-only {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
-    padding: 0 !important;
-    margin: -1px !important;
-    overflow: hidden !important;
-    clip: rect(0,0,0,0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
-    display: block;
+  position: absolute !important; width: 1px !important; height: 1px !important;
+  padding: 0 !important; margin: -1px !important; overflow: hidden !important;
+  clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important;
+  display: block;
 }
-
-.search-input {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-    .search-input svg {
-        position: absolute;
-        left: 14px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--text-faint);
-    }
-
-    .search-input input {
-        padding-left: 38px;
-    }
+.search-input { position: relative; display: flex; align-items: center; }
+.search-input svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-faint); }
+.search-input input { padding-left: 38px; }
 
 /* ---------- Cards & Badges ---------- */
 
 .card {
-    background: var(--bg-elevated);
-    border: 1px solid var(--line-soft);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-card);
+  background: var(--bg-elevated);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
 }
 
 .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--font-mono);
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
 }
-
-.badge-live {
-    background: rgba(60,90,65,.35);
-    color: var(--pitch-bright);
-    border-color: rgba(111,174,122,.35);
-}
-
-    .badge-live .pulse-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--pitch-bright);
-        animation: pulse-live 1.6s infinite;
-    }
-
-.badge-upcoming {
-    background: var(--gold-wash);
-    color: var(--gold-bright);
-    border-color: rgba(201,162,75,.3);
-}
-
-.badge-finished {
-    background: rgba(255,255,255,.05);
-    color: var(--text-muted);
-    border-color: var(--line);
-}
-
-.badge-paid {
-    background: rgba(60,90,65,.3);
-    color: var(--pitch-bright);
-}
-
-.badge-pending {
-    background: var(--gold-wash);
-    color: var(--gold-bright);
-}
-
-.badge-cancelled, .badge-rejected {
-    background: rgba(193,89,74,.12);
-    color: var(--danger-bright);
-}
-
-.badge-refunded {
-    background: rgba(255,255,255,.05);
-    color: var(--text-muted);
-}
+.badge-live { background: rgba(22,199,122,.35); color: var(--pitch-bright); border-color: rgba(107,255,175,.35); }
+.badge-live .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--pitch-bright); animation: pulse-live 1.6s infinite; }
+.badge-upcoming { background: var(--gold-wash); color: var(--gold-bright); border-color: rgba(0,194,255,.3); }
+.badge-finished { background: rgba(255,255,255,.05); color: var(--text-muted); border-color: var(--line); }
+.badge-paid { background: rgba(22,199,122,.3); color: var(--pitch-bright); }
+.badge-pending { background: rgba(255,167,38,.14); color: #ffc978; border-color: rgba(255,167,38,.35); }
+.badge-cancelled, .badge-rejected { background: rgba(255,59,78,.12); color: var(--danger-bright); }
+.badge-refunded { background: rgba(255,255,255,.05); color: var(--text-muted); }
 
 @keyframes pulse-live {
-    0%, 100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: .4;
-        transform: scale(.7);
-    }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .4; transform: scale(.7); }
 }
 
+/* Chấm "đang diễn ra" dùng chung, không phụ thuộc thẻ cha (khác .badge-live
+   .pulse-dot chỉ ăn màu khi nằm trong .badge-live) — dùng ở mọi nơi cần báo
+   hiệu live mà không bọc trong badge, ví dụ khối tỷ số trực tiếp ở trang chủ. */
+.ticket-stub .dot-live { background: #0f6b3f; box-shadow: 0 0 6px rgba(15,107,63,.5); }
 .dot-live {
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--pitch-bright);
-    box-shadow: 0 0 6px var(--pitch-bright);
-    animation: pulse-live 1.6s infinite;
-    vertical-align: middle;
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--pitch-bright);
+  box-shadow: 0 0 6px var(--pitch-bright);
+  animation: pulse-live 1.6s infinite;
+  vertical-align: middle;
 }
 
-/* ---------- Ticket-stub component (signature element) ---------- */
+/* ---------- Ticket-stub component (signature element) ----------
+   Cấu trúc: 1 khối chính (info) + 1 khối cuống (stub), ngăn cách bởi đường
+   đứt nét dọc + 2 "lỗ khoét" tròn trên/dưới — mô phỏng vé giấy xé thật.
+   Nền vé KHÔNG dùng trắng tinh (từng bị chê "trắng trơn, lệch tông") mà
+   ngả hẳn sang cyan rất nhạt (#eaf6fb) — bám sát đúng var(--gold), màu
+   thương hiệu chính của toàn site — vẫn đủ sáng để chữ tối đọc rõ, nhưng
+   không còn cảm giác 1 mảng trắng tách rời khỏi tông navy+cyan còn lại.
+   Vì nền đổi sang sáng, MỌI chữ/icon bên trong đều cần màu tối để đọc
+   được — xem các rule ".ticket-info ..." phía dưới ghi đè lại toàn bộ
+   token màu sáng (vốn dùng cho nền tối). */
 
 .ticket {
-    position: relative;
-    display: grid;
-    grid-template-columns: 1fr var(--stub-w, 148px);
-    background: var(--bg-elevated);
-    border: 1px solid var(--line-soft);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-card);
-    overflow: hidden;
-    transition: transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr var(--stub-w, 148px);
+  /* Nguyên tờ vé (cả 2 khối) 1 màu xanh cyan nhạt đồng nhất — lần trước
+     #eaf6fb bị chê vẫn nhìn ra trắng (quá nhạt), tăng đậm lên #cceefa cho
+     rõ màu xanh hẳn, đồng thời giảm lớp bóng chéo trắng để không pha loãng
+     lại màu nền. */
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,0) 45%),
+    #cceefa;
+  border: 1px solid rgba(10,110,140,.25);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px rgba(0,0,0,.2), 0 16px 36px -14px rgba(0,0,0,.55);
+  overflow: hidden;
+  transition: transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s;
 }
-
-    .ticket:hover {
-        transform: translateY(-3px);
-        border-color: rgba(201,162,75,.35);
-        box-shadow: 0 1px 2px rgba(0,0,0,.4), 0 20px 40px -16px rgba(201,162,75,.18), 0 20px 40px -20px rgba(0,0,0,.7);
-    }
-
-.ticket-info {
-    padding: 22px 24px;
-    min-width: 0;
+.ticket:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0,194,255,.5);
+  box-shadow: 0 1px 2px rgba(0,0,0,.2), 0 20px 40px -16px rgba(0,194,255,.3), 0 20px 44px -18px rgba(0,0,0,.55);
 }
-
+.ticket-info { position: relative; padding: 25px 24px 22px; min-width: 0; }
 .ticket-stub {
-    position: relative;
-    padding: 22px 18px;
-    background: var(--bg-elevated-2);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    text-align: center;
-    gap: 4px;
+  position: relative;
+  padding: 22px 18px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  gap: 4px;
+}
+/* Nhóm nhãn+giá trị chính được đẩy vào giữa bằng margin auto, còn mã vé
+   (.stub-code) luôn nằm ở đáy — lấp khoảng trống thay vì để trống giữa cột. */
+.ticket-stub .stub-main {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.ticket-stub .stub-code {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: .14em;
+  color: #4a5468;
+  opacity: .7;
+  padding-top: 10px;
+}
+.ticket-stub::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 -1px;
+  width: 0;
+  border-left: 3px dashed rgba(255,59,78,.85);
+}
+/* Vết khoét tròn trên & dưới đường phân cách — mô phỏng lỗ đục của vé giấy thật.
+   Luôn lấy màu nền trang (var(--bg)) bất kể cuống vé màu gì, vì đây là hiệu ứng
+   "khoét thủng" lộ ra nền phía sau, không phải 1 khối thuộc về cuống vé. */
+.ticket-stub .notch-top, .ticket-stub .notch-bottom {
+  position: absolute;
+  left: -9px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--bg);
+}
+.ticket-stub .notch-top { top: -9px; }
+.ticket-stub .notch-bottom { bottom: -9px; }
+
+.ticket-stub .stub-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #4a5468;
+}
+.ticket-stub .stub-value {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: #0c1120;
 }
 
-    .ticket-stub .stub-main {
-        margin: auto 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .ticket-stub .stub-code {
-        font-family: var(--font-mono);
-        font-size: 9px;
-        letter-spacing: .14em;
-        color: var(--text-faint);
-        opacity: .6;
-        padding-top: 10px;
-    }
-
-    .ticket-stub::before {
-        content: '';
-        position: absolute;
-        inset: 0 auto 0 -1px;
-        width: 0;
-        border-left: 2px dashed rgba(201,162,75,.3);
-    }
-
-    .ticket-stub .notch-top, .ticket-stub .notch-bottom {
-        position: absolute;
-        left: -9px;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: var(--bg);
-    }
-
-    .ticket-stub .notch-top {
-        top: -9px;
-    }
-
-    .ticket-stub .notch-bottom {
-        bottom: -9px;
-    }
-
-    .ticket-stub .stub-label {
-        font-family: var(--font-mono);
-        font-size: 10px;
-        letter-spacing: .1em;
-        text-transform: uppercase;
-        color: var(--text-faint);
-    }
-
-    .ticket-stub .stub-value {
-        font-family: var(--font-mono);
-        font-size: 22px;
-        font-weight: 600;
-        color: var(--gold-bright);
-    }
+/* Nền .ticket-info giờ là giấy trắng — mọi token màu chữ "sáng cho nền tối"
+   (var(--text), var(--gold)...) đang được dùng lại y nguyên ở khắp các hàm
+   render (fixtureCard, resultCard, hero, vé thành viên, vé của tôi...) cần
+   ghi đè lại thành màu tối ở phạm vi này, nếu không chữ sẽ biến mất trên
+   nền trắng. Không sửa lại từng chỗ gọi (rất nhiều nơi) mà chặn ở gốc bằng
+   cascade — mọi chữ mặc định tối trừ khi có class ưu tiên hơn (badge...). */
+.ticket-info { color: #0c1120; }
+.ticket-info h1, .ticket-info h2, .ticket-info h3, .ticket-info .display { color: #0c1120; }
+.ticket-info .eyebrow { color: #0a6e8c; }
+.ticket-info .eyebrow::before { background: #0a6e8c; }
+.ticket-info .meta-row { color: #4a5468; }
+.ticket-info .matchup { color: #0c1120; }
+.ticket-info .matchup .vs-mark { color: #5c6784; }
+.ticket-info .matchup .away-name { color: #4a5468; }
+.ticket-info .text-faint { color: #5c6784; }
+.ticket-info .text-muted { color: #4a5468; }
+.ticket-info .field label { color: #4a5468; }
+.ticket-info .btn-ghost { color: #4a5468; }
+.ticket-info .btn-ghost:hover { color: #0c1120; }
+.ticket-info .btn-danger { color: #b0223a; border-color: rgba(176,34,58,.5); }
+.ticket-info .btn-danger:hover { background: rgba(176,34,58,.08); }
+/* Badge trạng thái dùng màu chữ sáng (đọc được trên nền tối) ở mọi nơi khác
+   trên site — riêng trong .ticket-info (nền trắng) phải đổi hẳn sang chữ
+   đậm cùng tông, giữ nguyên ý nghĩa màu (xanh lá=live/đã trả, cam=chờ,
+   đỏ=hủy, xám=kết thúc) chỉ đổi độ sáng để đọc được. */
+.ticket-info .badge-live, .ticket-info .badge-paid { color: #0f6b3f; }
+.ticket-info .badge-live .pulse-dot { background: #0f6b3f; }
+.ticket-info .badge-upcoming { color: #0a6e8c; }
+.ticket-info .badge-pending { color: #8a5a00; }
+.ticket-info .badge-cancelled, .ticket-info .badge-rejected { color: #b0223a; }
+.ticket-info .badge-finished, .ticket-info .badge-refunded { background: rgba(12,17,32,.06); color: #4a5468; }
 
 @media (max-width: 620px) {
-    .ticket {
-        grid-template-columns: 1fr;
-    }
-
-    .ticket-stub {
-        flex-direction: row;
-        justify-content: space-between;
-        text-align: left;
-    }
-
-        .ticket-stub::before {
-            inset: -1px 0 auto 0;
-            height: 0;
-            border-left: none;
-            border-top: 2px dashed rgba(201,162,75,.3);
-        }
-
-        .ticket-stub .notch-top, .ticket-stub .notch-bottom {
-            top: -9px;
-            left: auto;
-        }
-
-        .ticket-stub .notch-top {
-            left: -9px;
-        }
-
-        .ticket-stub .notch-bottom {
-            right: -9px;
-            left: auto;
-        }
+  .ticket { grid-template-columns: 1fr; }
+  .ticket-stub { flex-direction: row; justify-content: space-between; text-align: left; }
+  .ticket-stub::before { inset: -1px 0 auto 0; height: 0; border-left: none; border-top: 3px dashed rgba(255,59,78,.85); }
+  .ticket-stub .notch-top, .ticket-stub .notch-bottom { top: -9px; left: auto; }
+  .ticket-stub .notch-top { left: -9px; }
+  .ticket-stub .notch-bottom { right: -9px; left: auto; }
 }
 
 /* ---------- Match card list ---------- */
 
 .match-teams {
-    display: flex;
-    align-items: center;
-    gap: 13px;
-    margin-bottom: 14px;
-    min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 14px;
+  min-width: 0;
 }
-
+/* Huy hiệu đội dạng khiên (shield) — dáng phù hiệu bóng đá thật, thay cho
+   hình tròn phẳng trừu tượng. Kỹ thuật 2 lớp: khung ngoài (viền) + lớp màu
+   riêng từng đội bên trong, cả 2 cùng cắt theo 1 đa giác khiên. */
 .team-crest {
-    width: 42px;
-    height: 46px;
-    flex-shrink: 0;
-    padding: 2.5px;
-    background: var(--line-soft);
-    clip-path: polygon(50% 0%, 91% 13%, 100% 52%, 74% 100%, 26% 100%, 0% 52%, 9% 13%);
-    display: flex;
+  width: 42px; height: 46px;
+  flex-shrink: 0;
+  padding: 2.5px;
+  background: var(--line-soft);
+  clip-path: polygon(50% 0%, 91% 13%, 100% 52%, 74% 100%, 26% 100%, 0% 52%, 9% 13%);
+  display: flex;
 }
-
-    .team-crest .crest-fill {
-        flex: 1;
-        clip-path: polygon(50% 0%, 91% 13%, 100% 52%, 74% 100%, 26% 100%, 0% 52%, 9% 13%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: var(--font-mono);
-        font-size: 12.5px;
-        font-weight: 700;
-        padding-bottom: 2px;
-    }
-
+.team-crest .crest-fill {
+  position: relative;
+  flex: 1;
+  clip-path: polygon(50% 0%, 91% 13%, 100% 52%, 74% 100%, 26% 100%, 0% 52%, 9% 13%);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding-bottom: 2px;
+}
+/* Nếu Admin đã nhập link logo thật cho đội (LogoUrl) thì ảnh này phủ lên trên,
+   che chữ tắt tên đội bên dưới; ảnh lỗi/chưa có thì tự ẩn (onerror), lộ lại
+   huy hiệu tự tạo theo màu riêng từng đội. */
+.team-crest .crest-fill img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+/* Dòng đối đầu 1 hàng "Đội nhà  vs  Đội khách" — thay cho 2 dòng xếp chồng
+   kiểu danh sách chung chung, đọc giống tấm bảng lịch thi đấu thật hơn. */
 .matchup {
-    font-family: var(--font-display);
-    font-size: 16.5px;
-    font-weight: 600;
-    color: var(--text);
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 16.5px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
 }
+.matchup span:not(.vs-mark) { overflow: hidden; text-overflow: ellipsis; }
+.matchup .vs-mark {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+.matchup .away-name { color: var(--text-muted); font-weight: 500; }
 
-    .matchup span:not(.vs-mark) {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .matchup .vs-mark {
-        font-family: var(--font-mono);
-        font-size: 10.5px;
-        font-weight: 500;
-        letter-spacing: .04em;
-        color: var(--text-faint);
-        flex-shrink: 0;
-    }
-
-    .matchup .away-name {
-        color: var(--text-muted);
-        font-weight: 500;
-    }
-
+/* Giá vé — điểm neo thị giác chính của mỗi thẻ trận đấu (thứ người xem
+   thực sự cần thấy nhanh), thay vì 1 dòng chữ nhỏ ngang hàng với mọi
+   thông tin phụ khác. */
 .fx-price {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 7px;
-    font-family: var(--font-mono);
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--gold-bright);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gold-bright);
 }
-
-    .fx-price .fx-price-label {
-        font-family: var(--font-body);
-        font-size: 10.5px;
-        font-weight: 600;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        color: var(--text-faint);
-    }
+.fx-price .fx-price-label {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
 
 .meta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 14px;
-    font-size: 12.5px;
-    color: var(--text-muted);
-    margin-bottom: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
 }
-
-    .meta-row span {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
+.meta-row span { display: flex; align-items: center; gap: 6px; }
 
 .score-line {
-    font-family: var(--font-mono);
-    font-size: 28px;
-    font-weight: 600;
-    color: var(--text);
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin: 6px 0 4px;
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 6px 0 4px;
 }
-
-    .score-line .dash {
-        color: var(--text-faint);
-        font-size: 18px;
-    }
+.score-line .dash { color: var(--text-faint); font-size: 18px; }
 
 .grid-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 20px;
 }
 
 .section-title {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin: 44px 0 18px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 44px 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-
-    .section-title::after {
-        content: '';
-        flex: 1;
-        height: 1px;
-        background: var(--line);
-    }
-
-    .section-title:first-child {
-        margin-top: 0;
-    }
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.section-title:first-child { margin-top: 0; }
 
 /* ---------- Seat map ---------- */
 
-.seat-legend {
-    display: flex;
-    gap: 18px;
-    flex-wrap: wrap;
-    font-size: 12.5px;
-    color: var(--text-muted);
-    margin-bottom: 20px;
-}
-
-    .seat-legend span {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-    }
-
-.legend-swatch {
-    width: 14px;
-    height: 14px;
-    border-radius: 4px;
-    display: inline-block;
-}
+.seat-legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-muted); margin-bottom: 20px; }
+.seat-legend span { display: flex; align-items: center; gap: 7px; }
+.legend-swatch { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
 
 .seat-block-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gold-bright);
-    margin: 22px 0 10px;
-    display: flex;
-    justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-bright);
+  margin: 22px 0 10px;
+  display: flex;
+  justify-content: space-between;
 }
-
-.seat-row-grid {
-    display: flex;
-    gap: 7px;
-    margin-bottom: 7px;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.row-label {
-    width: 18px;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-faint);
-}
+.seat-row-grid { display: flex; gap: 7px; margin-bottom: 7px; flex-wrap: wrap; align-items: center; }
+.row-label { width: 18px; font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
 
 .seat {
-    width: 34px;
-    height: 30px;
-    border-radius: 6px;
-    border: 1px solid transparent;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform .12s var(--ease), background .15s;
-    color: var(--text);
-    background: var(--bg-elevated-2);
+  width: 34px; height: 30px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .12s var(--ease), background .15s;
+  color: var(--text);
+  background: var(--bg-elevated-2);
 }
-
-    .seat:hover:not(:disabled) {
-        transform: translateY(-2px);
-    }
-
-    .seat.available {
-        background: var(--bg-elevated-2);
-        color: var(--text-muted);
-        border-color: var(--line);
-    }
-
-    .seat.held-by-me {
-        background: var(--gold);
-        color: #171307;
-        border-color: var(--gold-bright);
-        box-shadow: 0 0 0 3px var(--gold-wash);
-    }
-
-    .seat.held-other {
-        background: var(--bg-elevated-2);
-        color: var(--text-faint);
-        border-color: var(--line);
-        cursor: not-allowed;
-        opacity: .5;
-    }
-
-    .seat.booked {
-        background: transparent;
-        color: var(--text-faint);
-        border-color: var(--line-soft);
-        cursor: not-allowed;
-        opacity: .35;
-        text-decoration: line-through;
-    }
+.seat:hover:not(:disabled) { transform: translateY(-2px); }
+.seat.available { background: var(--bg-elevated-2); color: var(--text-muted); border-color: var(--line); }
+.seat.held-by-me { background: var(--gold); color: #071019; border-color: var(--gold-bright); box-shadow: 0 0 0 3px var(--gold-wash); }
+.seat.held-other { background: var(--bg-elevated-2); color: var(--text-faint); border-color: var(--line); cursor: not-allowed; opacity: .5; }
+.seat.booked { background: transparent; color: var(--text-faint); border-color: var(--line-soft); cursor: not-allowed; opacity: .35; text-decoration: line-through; }
 
 /* ---------- Food item picker ---------- */
 
 .food-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--line-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
 }
-
-    .food-item:last-child {
-        border-bottom: none;
-    }
-
-    .food-item .name {
-        font-weight: 600;
-        font-size: 14px;
-    }
-
-    .food-item .price {
-        color: var(--gold);
-        font-family: var(--font-mono);
-        font-size: 13px;
-    }
-
-.qty-control {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.food-item:last-child { border-bottom: none; }
+.food-item .name { font-weight: 600; font-size: 14px; }
+.food-item .price { color: var(--gold); font-family: var(--font-mono); font-size: 13px; }
+.qty-control { display: flex; align-items: center; gap: 10px; }
+.qty-control button {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg-elevated-2);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 17px;
+  line-height: 1;
 }
-
-    .qty-control button {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        border: 1px solid var(--line);
-        background: var(--bg-elevated-2);
-        color: var(--text);
-        cursor: pointer;
-        font-size: 15px;
-        line-height: 1;
-    }
-
-        .qty-control button:hover {
-            border-color: var(--gold-dim);
-        }
-
-    .qty-control .qty-num {
-        font-family: var(--font-mono);
-        width: 20px;
-        text-align: center;
-    }
+.qty-control button:hover { border-color: var(--gold-dim); }
+.qty-control .qty-num { font-family: var(--font-mono); width: 24px; text-align: center; font-size: 15px; }
 
 /* ---------- Summary / sticky checkout bar ---------- */
 
 .summary-bar {
-    position: sticky;
-    bottom: 20px;
-    margin-top: 28px;
-    padding: 18px 22px;
-    border-radius: var(--radius);
-    background: var(--bg-elevated);
-    border: 1px solid var(--gold-dim);
-    box-shadow: 0 20px 50px -20px rgba(0,0,0,.8);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
+  position: sticky;
+  bottom: 20px;
+  margin-top: 28px;
+  padding: 18px 22px;
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  border: 1px solid var(--gold-dim);
+  box-shadow: 0 20px 50px -20px rgba(0,0,0,.8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
 }
-
-    .summary-bar .total-label {
-        font-size: 12px;
-        color: var(--text-muted);
-    }
-
-    .summary-bar .total-amount {
-        font-family: var(--font-mono);
-        font-size: 22px;
-        color: var(--gold-bright);
-        font-weight: 600;
-    }
+.summary-bar .total-label { font-size: 12px; color: var(--text-muted); }
+.summary-bar .total-amount { font-family: var(--font-mono); font-size: 22px; color: var(--gold-bright); font-weight: 600; }
 
 /* ---------- Lineup pitch ---------- */
 
 .pitch {
-    position: relative;
-    aspect-ratio: 3 / 4;
-    background: repeating-linear-gradient(180deg, rgba(255,255,255,.02) 0 40px, transparent 40px 80px), linear-gradient(180deg, #16211a, #101a13);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.02) 0 40px, transparent 40px 80px),
+    linear-gradient(180deg, #16211a, #101a13);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
-
-    .pitch.pitch-editable {
-        cursor: crosshair;
-    }
-
+/* Sơ đồ sân trong admin-matches.html (tab Đội hình) cho click đặt vị trí —
+   trên trang public (match.html) chỉ để xem nên không cần con trỏ tay. */
+.pitch.pitch-editable { cursor: crosshair; }
 .pitch-player {
-    position: absolute;
-    transform: translate(-50%, -50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    width: 56px;
-    text-align: center;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  width: 56px;
+  text-align: center;
 }
-
-    .pitch-player .num {
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        background: var(--gold);
-        color: #171307;
-        font-family: var(--font-mono);
-        font-size: 11px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,.5);
-    }
-
-    .pitch-player .pname {
-        font-size: 9.5px;
-        color: var(--text);
-        line-height: 1.2;
-        text-shadow: 0 1px 3px #000;
-    }
+.pitch-player .num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #071019;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+.pitch-player .pname { font-size: 9.5px; color: var(--text); line-height: 1.2; text-shadow: 0 1px 3px #000; }
 
 /* ---------- Stat bars (possession etc.) ---------- */
 
-.stat-row {
-    margin-bottom: 14px;
-}
-
-    .stat-row .labels {
-        display: flex;
-        justify-content: space-between;
-        font-size: 12.5px;
-        margin-bottom: 6px;
-        color: var(--text-muted);
-    }
-
-        .stat-row .labels b {
-            color: var(--text);
-            font-family: var(--font-mono);
-        }
-
-.stat-track {
-    height: 6px;
-    border-radius: 999px;
-    background: var(--bg);
-    overflow: hidden;
-    display: flex;
-}
-
-    .stat-track .fill-home {
-        background: var(--gold);
-        height: 100%;
-    }
-
-    .stat-track .fill-away {
-        background: var(--line);
-        height: 100%;
-    }
+.stat-row { margin-bottom: 14px; }
+.stat-row .labels { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px; color: var(--text-muted); }
+.stat-row .labels b { color: var(--text); font-family: var(--font-mono); }
+.stat-track { height: 6px; border-radius: 999px; background: var(--bg); overflow: hidden; display: flex; }
+.stat-track .fill-home { background: var(--gold); height: 100%; }
+.stat-track .fill-away { background: var(--line); height: 100%; }
 
 /* ---------- Toast ---------- */
 
 #toast-root {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 100;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 100;
 }
-
 .toast {
-    background: var(--bg-elevated);
-    border: 1px solid var(--line);
-    border-left: 3px solid var(--gold);
-    color: var(--text);
-    padding: 13px 18px;
-    border-radius: var(--radius-sm);
-    font-size: 13.5px;
-    box-shadow: var(--shadow-card);
-    animation: toast-in .3s var(--ease);
-    max-width: 340px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold);
+  color: var(--text);
+  padding: 13px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  box-shadow: var(--shadow-card);
+  animation: toast-in .3s var(--ease);
+  max-width: 340px;
 }
-
-    .toast.error {
-        border-left-color: var(--danger);
-    }
-
-    .toast.success {
-        border-left-color: var(--pitch-bright);
-    }
-
+.toast.error { border-left-color: var(--danger); }
+.toast.success { border-left-color: var(--pitch-bright); }
 @keyframes toast-in {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ---------- Empty / loading states ---------- */
 
 .empty-state {
-    text-align: center;
-    padding: 64px 20px;
-    color: var(--text-muted);
+  text-align: center;
+  padding: 64px 20px;
+  color: var(--text-muted);
 }
-
-    .empty-state .icon {
-        font-size: 30px;
-        margin-bottom: 12px;
-        opacity: .5;
-    }
-
-    .empty-state p {
-        max-width: 360px;
-        margin: 8px auto 0;
-        font-size: 13.5px;
-    }
+.empty-state .icon { font-size: 30px; margin-bottom: 12px; opacity: .5; }
+.empty-state p { max-width: 360px; margin: 8px auto 0; font-size: 13.5px; }
 
 .skeleton {
-    background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-elevated-2) 37%, var(--bg-elevated) 63%);
-    background-size: 400% 100%;
-    animation: shimmer 1.4s ease infinite;
-    border-radius: var(--radius);
+  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-elevated-2) 37%, var(--bg-elevated) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: var(--radius);
 }
-
-@keyframes shimmer {
-    0% {
-        background-position: 100% 0;
-    }
-
-    100% {
-        background-position: -100% 0;
-    }
-}
+@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
 
 /* ---------- Fade-in on load ---------- */
 
-.fade-in {
-    animation: fade-in .5s var(--ease) both;
-}
+.fade-in { animation: fade-in .5s var(--ease) both; }
+@keyframes fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-@keyframes fade-in {
-    from {
-        opacity: 0;
-        transform: translateY(6px);
-    }
-
-    to {
-        opacity: 1;
-        transform: none;
-    }
-}
+/* Stagger nhẹ khi 1 lưới/dải thẻ được render cùng lúc — từng thẻ bật lên
+   lệch nhau ~40ms thay vì đồng loạt 1 lúc, tạo cảm giác chuyển động có chủ
+   đích (áp dụng qua nth-child nên không cần sửa JS render ở từng trang). */
+.grid-cards > *:nth-child(1), .team-strip > *:nth-child(1), .snack-strip > *:nth-child(1), #list > *:nth-child(1), .stat-grid > *:nth-child(1) { animation-delay: 0ms; }
+.grid-cards > *:nth-child(2), .team-strip > *:nth-child(2), .snack-strip > *:nth-child(2), #list > *:nth-child(2), .stat-grid > *:nth-child(2) { animation-delay: 40ms; }
+.grid-cards > *:nth-child(3), .team-strip > *:nth-child(3), .snack-strip > *:nth-child(3), #list > *:nth-child(3), .stat-grid > *:nth-child(3) { animation-delay: 80ms; }
+.grid-cards > *:nth-child(4), .team-strip > *:nth-child(4), .snack-strip > *:nth-child(4), #list > *:nth-child(4), .stat-grid > *:nth-child(4) { animation-delay: 120ms; }
+.grid-cards > *:nth-child(5), .team-strip > *:nth-child(5), .snack-strip > *:nth-child(5), #list > *:nth-child(5), .stat-grid > *:nth-child(5) { animation-delay: 160ms; }
+.grid-cards > *:nth-child(n+6), .team-strip > *:nth-child(n+6), .snack-strip > *:nth-child(n+6), #list > *:nth-child(n+6) { animation-delay: 200ms; }
 
 /* ---------- Utility ---------- */
 
-.flex {
-    display: flex;
-}
-
-.flex-between {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.gap-8 {
-    gap: 8px;
-}
-
-.gap-12 {
-    gap: 12px;
-}
-
-.gap-16 {
-    gap: 16px;
-}
-
-.mt-8 {
-    margin-top: 8px;
-}
-
-.mt-16 {
-    margin-top: 16px;
-}
-
-.mt-24 {
-    margin-top: 24px;
-}
-
-.mt-32 {
-    margin-top: 32px;
-}
-
-.mb-8 {
-    margin-bottom: 8px;
-}
-
-.mb-16 {
-    margin-bottom: 16px;
-}
-
-.text-muted {
-    color: var(--text-muted);
-}
-
-.text-gold {
-    color: var(--gold);
-}
-
-.text-center {
-    text-align: center;
-}
-
-.text-sm {
-    font-size: 13px;
-}
-
-.mono {
-    font-family: var(--font-mono);
-}
-
-.divider {
-    height: 1px;
-    background: var(--line-soft);
-    margin: 20px 0;
-    border: none;
-}
+.flex { display: flex; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.gap-8 { gap: 8px; } .gap-12 { gap: 12px; } .gap-16 { gap: 16px; }
+.mt-8 { margin-top: 8px; } .mt-16 { margin-top: 16px; } .mt-24 { margin-top: 24px; } .mt-32 { margin-top: 32px; }
+.mb-8 { margin-bottom: 8px; } .mb-16 { margin-bottom: 16px; }
+.text-muted { color: var(--text-muted); }
+/* Không glow ở đây — .text-gold dùng lặp lại rất nhiều lần (từng dòng giá
+   trong bảng, danh sách...), glow trên toàn bộ sẽ rối mắt thay vì "sạch sẽ".
+   Hiệu ứng phát sáng chỉ giữ riêng cho 1-2 con số quan trọng nhất, xem
+   .stat-hero .stat-value bên dưới. */
+.text-gold { color: var(--gold); }
+.text-center { text-align: center; }
+.text-sm { font-size: 13px; }
+.mono { font-family: var(--font-mono); }
+.divider { height: 1px; background: var(--line-soft); margin: 20px 0; border: none; }
 
 .center-narrow {
-    max-width: 420px;
-    margin: 0 auto;
+  max-width: 420px;
+  margin: 0 auto;
 }
 
 .site-footer {
-    border-top: 1px solid var(--line-soft);
-    padding: 28px 0;
-    color: var(--text-faint);
-    font-size: 12.5px;
-    text-align: center;
+  border-top: 1px solid var(--line-soft);
+  padding: 28px 0;
+  color: var(--text-faint);
+  font-size: 12.5px;
+  text-align: center;
 }
 
 /* ---------- Admin ---------- */
 
 .admin-tabs {
-    display: flex;
-    gap: 4px;
-    background: var(--bg-elevated);
-    border: 1px solid var(--line-soft);
-    border-radius: var(--radius);
-    padding: 6px;
-    margin-bottom: 32px;
-    flex-wrap: wrap;
-    box-shadow: var(--shadow-card);
+  display: flex;
+  gap: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  padding: 6px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-card);
 }
-
 .admin-tab {
-    font-family: var(--font-mono);
-    font-size: 14.5px;
-    font-weight: 600;
-    letter-spacing: .03em;
-    color: var(--text-muted);
-    padding: 10px 18px;
-    border-radius: var(--radius-sm);
-    transition: color .2s, background .2s;
+  font-family: var(--font-mono);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  color: var(--text-muted);
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  transition: color .2s, background .2s;
 }
+.admin-tab:hover { color: var(--text); background: var(--bg-elevated-2); }
+.admin-tab.active { color: #ffffff; background: var(--gold); }
 
-    .admin-tab:hover {
-        color: var(--text);
-        background: var(--bg-elevated-2);
-    }
-
-    .admin-tab.active {
-        color: #ffffff;
-        background: var(--gold);
-    }
+/* Stat hero — 1 con số quan trọng nhất (tổng doanh thu) được tách riêng, to và nổi bật
+   hơn hẳn phần còn lại, thay vì xếp chung 6 ô bằng nhau như 1 lưới khuôn mẫu. */
+.stat-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 26px 30px;
+  margin-bottom: 18px;
+  background: linear-gradient(135deg, var(--gold-wash), transparent 65%);
+  border: 1px solid var(--gold-dim);
+}
+.stat-hero .stat-label {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.stat-hero .stat-value {
+  font-family: var(--font-mono);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--gold-bright);
+  text-shadow: 0 0 18px rgba(0,194,255,.45);
+}
+.stat-hero .stat-sub { font-size: 13px; color: var(--text-muted); }
 
 .stat-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 14px;
-    margin-bottom: 36px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 36px;
 }
-
-.stat-card {
-    padding: 18px 20px;
+.stat-card { padding: 18px 20px; }
+.stat-card .stat-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
 }
-
-    .stat-card .stat-label {
-        font-family: var(--font-mono);
-        font-size: 10.5px;
-        font-weight: 700;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        margin-bottom: 8px;
-    }
-
-    .stat-card .stat-value {
-        font-family: var(--font-mono);
-        font-size: 22px;
-        font-weight: 600;
-        color: var(--gold-bright);
-    }
-
-    .stat-card .stat-sub {
-        font-size: 11.5px;
-        color: var(--text-muted);
-        margin-top: 4px;
-    }
-
-.table-wrap {
-    overflow-x: auto;
-    border: 1px solid var(--line-soft);
-    border-radius: var(--radius);
-    margin-bottom: 8px;
+.stat-card .stat-value {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--gold-bright);
 }
+.stat-card .stat-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; }
 
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13.5px;
+.table-wrap { overflow-x: auto; border: 1px solid var(--line-soft); border-radius: var(--radius); margin-bottom: 8px; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.data-table th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 12px;
+  border-bottom: 1px solid var(--line-soft);
+  white-space: nowrap;
+  background: var(--bg-elevated-2);
 }
-
-    .data-table th {
-        text-align: left;
-        font-family: var(--font-mono);
-        font-size: 10.5px;
-        font-weight: 700;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        padding: 12px;
-        border-bottom: 1px solid var(--line-soft);
-        white-space: nowrap;
-        background: var(--bg-elevated-2);
-    }
-
-    .data-table td {
-        padding: 12px;
-        border-bottom: 1px solid var(--line-soft);
-        vertical-align: middle;
-    }
-
-    .data-table tr:last-child td {
-        border-bottom: none;
-    }
-
-    .data-table tr:hover td {
-        background: rgba(255,255,255,.02);
-    }
+.data-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(255,255,255,.02); }
 
 .form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 0 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0 16px;
 }
 
-.admin-panel {
-    padding: 24px 26px;
-    margin-bottom: 24px;
-}
+.admin-panel { padding: 24px 26px; margin-bottom: 24px; }
+.admin-panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
+.admin-panel-head h2 { font-size: 17px; }
 
-.admin-panel-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 18px;
-    gap: 12px;
-    flex-wrap: wrap;
-}
+.row-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
 
-    .admin-panel-head h2 {
-        font-size: 17px;
-    }
+.checkbox-field { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+.checkbox-field input { width: auto; }
+.checkbox-field label { margin: 0; font-size: 13.5px; color: var(--text); }
 
-.row-actions {
-    display: flex;
-    gap: 6px;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-}
-
-.checkbox-field {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 18px;
-}
-
-    .checkbox-field input {
-        width: auto;
-    }
-
-    .checkbox-field label {
-        margin: 0;
-        font-size: 13.5px;
-        color: var(--text);
-    }
-
+/* Input nhỏ dùng trong bảng (giá vé từng khối, tọa độ cầu thủ, chỉ số trận) —
+   khác với .field input (dùng cho form full-width), input ở đây gọn theo ô bảng. */
 .stat-input {
-    background: var(--bg);
-    border: 1px solid var(--line);
-    color: var(--text);
-    font-family: var(--font-mono);
-    font-size: 13px;
-    padding: 6px 8px;
-    border-radius: var(--radius-sm);
-    width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  width: 100%;
 }
+.stat-input:focus { border-color: var(--gold-dim); outline: none; }
 
-    .stat-input:focus {
-        border-color: var(--gold-dim);
-        outline: none;
-    }
-
+/* Tab con bên trong 1 trang admin (vd 4 tab Giá vé/Đội hình/Kết quả/Chỉ số
+   trong admin-matches.html) — tái dùng đúng kiểu chữ .admin-tab nhưng render
+   bằng <button> (không có href) nên cần reset lại appearance mặc định. */
 button.admin-tab {
-    appearance: none;
-    -webkit-appearance: none;
-    background: none;
-    border: none;
-    cursor: pointer;
-    margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin: 0;
 }
-
-    button.admin-tab.active {
-        color: #ffffff;
-        background: var(--gold);
-    }
+button.admin-tab.active { color: #ffffff; background: var(--gold); }

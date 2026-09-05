@@ -167,7 +167,91 @@ public class BookingsController : ControllerBase
 
         return Ok(result);
     }
+    /// <summary>
+    /// Đặt THÊM đồ ăn/thức uống cho 1 trận mà user ĐÃ có vé đã thanh toán (task #24) — dùng khi khách đã
+    /// vào sân rồi mới muốn mua thêm, không phải lúc đặt vé ban đầu. Tạo ra 1 Booking mới KHÔNG có ghế
+    /// (chỉ có đồ ăn), Status = Pending, đi qua đúng luồng thanh toán VNPay như 1 đơn vé bình thường —
+    /// PaymentsController/ITicketService đều không quan tâm Booking có ghế hay không nên không cần sửa gì
+    /// ở 2 chỗ đó. Bắt buộc user phải có ít nhất 1 đơn Paid có ghế cho đúng trận này trước, tránh trường
+    /// hợp mua đồ ăn cho 1 trận mà mình không hề có vé (vô nghĩa vì không ai tới sân nhận đồ).
+    /// </summary>
+    [HttpPost("food-only")]
+    public async Task<ActionResult<BookingDto>> CreateFoodOnly(CreateFoodOnlyBookingDto dto)
+    {
+        var match = await _db.Matches.FindAsync(dto.MatchId);
+        if (match is null) return NotFound(new { message = "Không tìm thấy trận đấu." });
 
+        if (match.Status == MatchStatus.Finished)
+        {
+            return BadRequest(new { message = "Trận đấu đã kết thúc, không thể đặt thêm đồ ăn." });
+        }
+
+        var userId = CurrentUserId;
+
+        var hasPaidTicket = await _db.Bookings
+            .AnyAsync(b => b.UserId == userId
+                && b.MatchId == dto.MatchId
+                && b.Status == BookingStatus.Paid
+                && b.BookingSeats.Any());
+
+        if (!hasPaidTicket)
+        {
+            return BadRequest(new { message = "Bạn cần có vé đã thanh toán cho trận này trước khi đặt thêm đồ ăn." });
+        }
+
+        var items = (dto.Items ?? new()).Where(i => i.Quantity > 0).ToList();
+        if (items.Count == 0)
+        {
+            return BadRequest(new { message = "Chưa chọn món ăn/thức uống nào." });
+        }
+
+        var foodItemIds = items.Select(i => i.FoodItemId).Distinct().ToList();
+        var foodItems = await _db.FoodItems
+            .Where(f => foodItemIds.Contains(f.Id))
+            .ToDictionaryAsync(f => f.Id);
+
+        var missingIds = foodItemIds.Where(fid => !foodItems.ContainsKey(fid)).ToList();
+        if (missingIds.Count > 0)
+        {
+            return BadRequest(new { message = $"Có món ăn/thức uống không tồn tại (Id: {string.Join(", ", missingIds)})." });
+        }
+
+        var unavailable = items.FirstOrDefault(i => !foodItems[i.FoodItemId].IsAvailable);
+        if (unavailable is not null)
+        {
+            return BadRequest(new { message = $"Món '{foodItems[unavailable.FoodItemId].Name}' hiện đã ngừng bán." });
+        }
+
+        var booking = new Booking
+        {
+            BookingCode = GenerateBookingCode(),
+            Status = BookingStatus.Pending,
+            UserId = userId,
+            MatchId = dto.MatchId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        decimal foodAmount = 0;
+        foreach (var item in items)
+        {
+            var food = foodItems[item.FoodItemId];
+            foodAmount += food.Price * item.Quantity;
+            booking.FoodItems.Add(new BookingFoodItem
+            {
+                FoodItemId = food.Id,
+                Quantity = item.Quantity,
+                UnitPrice = food.Price
+            });
+        }
+
+        booking.TotalAmount = foodAmount;
+
+        _db.Bookings.Add(booking);
+        await _db.SaveChangesAsync();
+
+        var resultDto = await BuildBookingDto(booking.Id);
+        return CreatedAtAction(nameof(GetById), new { id = booking.Id }, resultDto);
+    }
     /// <summary>
     /// Đặt/cập nhật giỏ đồ ăn-thức uống cho 1 đơn đang Pending (task #17) — gọi lại nhiều lần sẽ THAY THẾ
     /// toàn bộ giỏ đồ ăn cũ bằng danh sách mới (không cộng dồn), đơn giản hoá việc sửa giỏ hàng.
