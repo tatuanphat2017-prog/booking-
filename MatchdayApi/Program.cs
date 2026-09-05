@@ -148,6 +148,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseDefaultFiles();
 app.UseStaticFiles(); // phục vụ trang test SignalR tại wwwroot/seat-test.html
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
